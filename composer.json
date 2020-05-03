@@ -1,5 +1,5 @@
 {
-  "name": "yageorgiy/driver-vk-community-callback",
+  "name": "yageorgiy/botman-vk-community-callback-driver",
   "license": "MIT",
   "description": "A VK community callback driver for botman.io framework",
   "keywords": [
@@ -9,9 +9,12 @@
     "VK API",
     "VK Messages",
     "VK Community",
-    "VK Callback"
+    "VK Callback",
+    "Vkontakte",
+    "Vkontakte Bot",
+    "Vkontakte Community Bot"
   ],
-  "homepage": "http://github.com/yageorgiy/driver-vk-community-callback",
+  "homepage": "http://github.com/yageorgiy/botman-vk-community-callback-driver",
   "authors": [
     {
       "name": "Yankovskiy Georgiy",

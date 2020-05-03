@@ -50,7 +50,7 @@ From the page of your community, go to `Manage -> Settings tab -> API usage -> C
 ### Installing the driver
 Require the driver via composer:
 ```bash
-composer require yageorgiy/driver-vk-community-callback
+composer require yageorgiy/botman-vk-community-callback-driver
 ```
 
 If you're using BotMan Studio, you should define in the `.env` file the following properties:
