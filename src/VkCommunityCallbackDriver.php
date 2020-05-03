@@ -331,7 +331,7 @@ class VkCommunityCallbackDriver extends HttpDriver
             if(method_exists($message,'getActions') && $message->getActions() != null){
                 $actions = $message->getActions();
 
-                $inline = true;
+                $inline = false;
                 $max_fields = $inline ? 10 : 50;
                 $max_x = $inline ? 5 : 5;
                 $max_y = $inline ? 6 : 10;
