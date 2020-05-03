@@ -1,0 +1,4 @@
+vendor
+.idea
+.discovery
+composer.lock

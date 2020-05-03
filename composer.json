@@ -1,0 +1,58 @@
+{
+  "name": "yageorgiy/driver-vk-community-callback",
+  "license": "MIT",
+  "description": "A VK community callback driver for botman.io framework",
+  "keywords": [
+    "Bot",
+    "BotMan",
+    "VK",
+    "VK API",
+    "VK Messages",
+    "VK Community",
+    "VK Callback"
+  ],
+  "homepage": "http://github.com/yageorgiy/driver-vk-community-callback",
+  "authors": [
+    {
+      "name": "Yankovskiy Georgiy",
+      "email": "admin@yageorgiy.ru"
+    }
+  ],
+  "require": {
+    "php": ">=7.0",
+    "botman/botman": "~2.1|~3.0",
+    "ext-json": "*",
+    "ext-curl": "*"
+  },
+  "require-dev": {
+    "botman/studio-addons": "~1.0",
+    "phpunit/phpunit": "~5.0",
+    "illuminate/contracts": "~5.5.0",
+    "mockery/mockery": "dev-master",
+    "ext-curl": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "BotMan\\Drivers\\VK\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit",
+    "cs": "php-cs-fixer fix"
+  },
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    },
+    "laravel": {
+      "providers": [
+        "BotMan\\Drivers\\VK\\Providers\\VKServiceProvider"
+      ]
+    }
+  }
+}
