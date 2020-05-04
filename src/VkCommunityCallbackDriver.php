@@ -4,7 +4,11 @@ namespace BotMan\Drivers\VK;
 use BotMan\BotMan\Drivers\Events\GenericEvent;
 use BotMan\BotMan\Drivers\HttpDriver;
 use BotMan\BotMan\Interfaces\DriverEventInterface;
+use BotMan\BotMan\Messages\Attachments\File;
 use BotMan\BotMan\Messages\Attachments\Image;
+use BotMan\BotMan\Messages\Attachments\Location;
+use BotMan\BotMan\Messages\Attachments\Video;
+use BotMan\BotMan\Messages\Attachments\Audio;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
@@ -59,10 +63,14 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * @var
      */
-    private $driverEvent;
+//    private $driverEvent;
 
 
-
+    /**
+     * Building the payload
+     *
+     * @param Request $request
+     */
     public function buildPayload(Request $request)
     {
         // Setting IP-address
@@ -82,7 +90,8 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * Manages the text to be echoed for VK API
      */
-    protected function reply(){
+    protected function reply()
+    {
         if(!$this->reply){
             switch($this->payload->get("type")){
                 // Echo OK for incoming messages
@@ -110,7 +119,8 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * Echos 'ok'
      */
-    public function ok(){
+    public function ok()
+    {
         if(!$this->ok){
             echo("ok");
             $this->ok = true;
@@ -120,7 +130,8 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * Echoes confirmation pass-phrase
      */
-    public function echoConfirmationToken(){
+    public function echoConfirmationToken()
+    {
         //TODO: save output?
         echo($this->config->get("confirm"));
     }
@@ -151,10 +162,6 @@ class VkCommunityCallbackDriver extends HttpDriver
     public function getMessages()
     {
         if (empty($this->messages)) {
-
-
-//            $message = $this->event->get('message');
-//            $userId = $this->event->get('userId');
             $message = "generic";
             $peer_id = 0;
             $message_object = [];
@@ -176,14 +183,13 @@ class VkCommunityCallbackDriver extends HttpDriver
             }
             $this->peer_id = $peer_id;
 
+            // Replacing button's value from payload to message text
             if(isset($message_object["payload"])){
                 $payload_text = json_decode($message_object["payload"], true)["__message"];
                 if(isset($payload_text) && $payload_text != null) $message = $payload_text;
             }
 
-
-            $incomingMessage = new IncomingMessage($message, $peer_id, $peer_id, $this->payload);
-            $incomingMessage->addExtras("message_object", $message_object);
+            $incomingMessage = $this->serializeIncomingMessage($message, $peer_id, $peer_id, $message_object);
 
             $this->messages = [$incomingMessage];
         }
@@ -191,6 +197,108 @@ class VkCommunityCallbackDriver extends HttpDriver
         $this->reply();
 
         return $this->messages;
+    }
+
+
+    /**
+     * Making up an incomming message
+     *
+     * @param $message
+     * @param $sender
+     * @param $recipient
+     * @param $message_object
+     * @return IncomingMessage
+     */
+    private function serializeIncomingMessage($message, $sender, $recipient, $message_object)
+    {
+        $attachments = [];
+        $collection = Collection::make($message_object["attachments"]);
+
+        // Getting photos
+        (($_ = $collection->where('type', 'photo')->pluck('photo')->map(function ($item) {
+                // Pick the best photo (with high resolution)
+                $found = Collection::make($item["sizes"])->sortBy("height")->last();
+
+                return new Image($found['url'], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["photos"] = $_) : false;
+
+        // Getting videos
+        (($_ = $collection->where('type', 'video')->pluck('video')->map(function ($item) {
+                // TODO: try to get URL by API methods if possible
+                // Empty string is given here as it could not be directly retrieved via VK request
+                return new Video("", $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["videos"] = $_) : false;
+
+        // Getting audio
+        (($_ = $collection->where('type', 'audio')->pluck('audio')->map(function ($item) {
+                return new Audio($item["url"], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["audios"] = $_) : false;
+
+        // Getting files/documents
+        (($_ = $collection->where('type', 'doc')->pluck('doc')->map(function ($item) {
+                return new File($item["url"], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["files"] = $_) : false;
+
+        // Getting location
+        (($_ = $message_object["geo"] ?? []) && count($_) > 0) ? ($attachments["location"] = new Location($_["coordinates"]["latitude"], $_["coordinates"]["longitude"], $_)) : false;
+
+
+
+
+        // Returning message with images only
+        if(count($attachments) == 1 and isset($attachments["photos"])){
+            $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
+            $result->setImages($attachments["photos"]);
+
+            return $result;
+        }
+
+        // Returning message with videos only
+        if(count($attachments) == 1 and isset($attachments["videos"])){
+            $result = new IncomingMessage(Video::PATTERN, $sender, $recipient, $this->payload);
+            $result->setVideos($attachments["videos"]);
+
+            return $result;
+        }
+
+        // Returning message with audio only
+        if(count($attachments) == 1 and isset($attachments["audios"])){
+            $result = new IncomingMessage(Audio::PATTERN, $sender, $recipient, $this->payload);
+            $result->setAudio($attachments["audios"]);
+
+            return $result;
+        }
+
+        // Returning message with files only
+        if(count($attachments) == 1 and isset($attachments["files"])){
+            $result = new IncomingMessage(File::PATTERN, $sender, $recipient, $this->payload);
+            $result->setFiles($attachments["files"]);
+
+            return $result;
+        }
+
+        // Returning message with location only
+        if(count($attachments) == 1 and isset($attachments["location"])){
+            $result = new IncomingMessage(Location::PATTERN, $sender, $recipient, $this->payload);
+            $result->setLocation($attachments["location"]);
+
+            return $result;
+        }
+
+        // Returning message with mixed attachments
+        if(count($attachments) > 1){
+            $result = new IncomingMessage($message, $sender, $recipient, $this->payload);
+            if(isset($attachments["photos"])) $result->setImages($attachments["photos"]);
+            if(isset($attachments["videos"])) $result->setVideos($attachments["videos"]);
+            if(isset($attachments["audios"])) $result->setAudio($attachments["audios"]);
+            if(isset($attachments["files"])) $result->setFiles($attachments["files"]);
+            if(isset($attachments["location"])) $result->setLocation($attachments["location"]);
+
+            return $result;
+        }
+
+        // Returning regular message (if no attachments detected)
+        return new IncomingMessage($message, $sender, $recipient, $this->payload);
     }
 
     /**
@@ -271,15 +379,17 @@ class VkCommunityCallbackDriver extends HttpDriver
     public function getUser(IncomingMessage $matchingMessage)
     {
         // Retrieving all relevant information about user
-        // TODO: custom fields
+        $fields = $this->config->get("user_fields", "");
+
         $response = $this->api("users.get", [
-            "user_ids" => $matchingMessage->getExtras("message_object")["from_id"],
-            "fields" => "photo_id, verified, sex, bdate, city, country, photo_50, photo_100, photo_200, photo_max, online, status, nickname, can_post, can_see_all_posts, can_see_audio, can_write_private_message, can_send_friend_request, is_favorite, is_hidden_from_feed, timezone, blacklisted, blacklisted_by_me, can_be_invited_group"
+            "user_ids" => $matchingMessage->getSender(),
+            "fields" => $fields
         ], true);
 
         $first_name = $response["response"][0]["first_name"];
         $last_name = $response["response"][0]["first_name"];
         $username = "id".$response["response"][0]["id"];
+
 
         // TODO: remade with proper user class suitable for VK user
         return new User($matchingMessage->getSender(), $first_name, $last_name, $username, $response["response"][0]);
@@ -328,6 +438,7 @@ class VkCommunityCallbackDriver extends HttpDriver
             // Building buttons
             // TODO: make a dedicated method
             // TODO: make a suitable VK buttons class
+            // TODO: optimize the mess
             if(method_exists($message,'getActions') && $message->getActions() != null){
                 $actions = $message->getActions();
 
@@ -455,7 +566,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param IncomingMessage $matchingMessage
      * @return bool|void
      */
-    public function types(IncomingMessage $matchingMessage) {
+    public function types(IncomingMessage $matchingMessage)
+    {
         $this->api("messages.setActivity", [
             "peer_id" => $matchingMessage->getRecipient(),
             "type" => "typing"
@@ -472,7 +584,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param bool $asArray
      * @return Response
      */
-    public function api(string $method, array $post_data, bool $asArray = false){
+    public function api($method, $post_data, $asArray = false)
+    {
 
         $post_data += [
             "v" => $this->config->get("version"),
@@ -493,7 +606,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param string $filename
      * @return array
      */
-    public function upload(string $url, string $filename/*, bool $asArray = false*/){
+    public function upload($url, $filename/*, $asArray = false*/)
+    {
 
         //TODO: upload with native tools
         if(preg_match("/^http/i", $filename)){
@@ -515,6 +629,8 @@ class VkCommunityCallbackDriver extends HttpDriver
         $json = curl_exec($curl);
         curl_close($curl);
 
+        //TODO: check for exceptions
+
         unlink($filename);
 
         return json_decode($json, true);
@@ -525,7 +641,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @return bool
      */
-    public function isConversation(){
+    public function isConversation()
+    {
         return $this->peer_id >= 2000000000;
     }
 

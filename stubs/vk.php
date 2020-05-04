@@ -60,5 +60,15 @@ return [
     | Integer value of community ID
     |
     */
-    "group_id" => env("VK_GROUP_ID")
+    "group_id" => env("VK_GROUP_ID"),
+
+    /*
+    |--------------------------------------------------------------------------
+    | VK Extra User fields
+    |--------------------------------------------------------------------------
+    |
+    | Used when retrieving info about sender
+    |
+    */
+    "user_fields" => env("VK_USER_FIELDS", "")
 ];

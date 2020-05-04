@@ -14,14 +14,18 @@ Table of driver's features:
 |Sending locations|❌ Not supported yet|
 |Sending stickers|❌ Not supported yet|
 |Sending voice messages|❌ Not supported yet|
-|Sending keyboards|⚠ Partially supported|
+|Sending keyboards|⚠ Partially supported (under construction)|
+|Listening for images|✔ Fully supported|
+|Listening for videos|⚠ Partially supported (no video URL provided by VK API)|
+|Listening for audio|✔ Fully supported|
+|Listening for files|✔ Fully supported|
+|Listening for locations|✔ Fully supported|
+|Receiving messages with mixed attachments|✔ Fully supported|
 |Typing status|✔ Fully supported|
-|Retrieving user data|✔ Supported *|
-|Usage in VK conversations|⚠ Partially supported|
-|Switching language|❌ Not supported yet|
+|Mark seen|⚠ Partially supported (under construction)|
+|Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
+|Usage in VK conversations|⚠ Partially supported (under construction)|
 |Multiple communities handling|❌ Not supported yet|
-
-\* \- Can access the following user fields: id, first_name, last_name, is_closed, can_access_closed, photo_id, verified, sex, bdate, city, country, photo_50, photo_100, photo_200, photo_max, online, status, nickname, can_post, can_see_all_posts, can_see_audio, can_write_private_message, can_send_friend_request, is_favorite, is_hidden_from_feed, timezone, blacklisted, blacklisted_by_me, can_be_invited_group
 
 ## Setup
 ### Getting the Community API key
@@ -62,6 +66,7 @@ VK_API_VERSION=5.103                            # API version to be used for sen
 VK_MESSAGES_ENDPOINT=https://api.vk.com/method/ # VK API endpoint (don't change it if unnecessary)
 VK_CONFIRM="REPLACE_ME"                         # Confirmation phrase for VK (from Callback API tab, see above)
 VK_GROUP_ID="REPLACE_ME"                        # Community or group ID
+VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields ) (left blank for no extra fields)
 ```
 
 If you don't use BotMan Studio, the driver should be applied manually:
@@ -79,7 +84,8 @@ BotManFactory::create([
         "version" => "5.103",                       // API version to be used for sending an receiving messages (should be 5.103 and higher) (not recommended to change)
         "endpoint" => "https://api.vk.com/method/", // VK API endpoint (don't change it if unnecessary)
         "confirm" => "REPLACE_ME",                  // Confirmation phrase for VK (from Callback API tab, see above)
-        "group_id" => "REPLACE_ME"                  // Community or group ID
+        "group_id" => "REPLACE_ME",                 // Community or group ID
+        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields ) (left blank for no extra fields)
     ]
 ]);
 
@@ -204,7 +210,33 @@ $botman->hears("What can you do\?", function ($bot) {
 
 See [VK documentation page](https://vk.com/dev/bots_docs_3) for available colours, types and other features. Just add new fields in array of additional parameters as it is shown in the example above.
 
+### Listening for images
 
+TODO
+
+### Listening for videos
+
+TODO
+
+### Listening for audio
+
+TODO
+
+### Listening for documents (files)
+
+TODO
+
+### Listening for location
+
+TODO
+
+### Receiving messages with mixed attachments
+
+TODO
+
+### Retrieving extra user data
+
+TODO
 
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
