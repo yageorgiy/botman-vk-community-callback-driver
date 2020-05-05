@@ -7,25 +7,31 @@ Table of driver's features:
 |Feature|Is Supported|
 | --- | --- |
 |Sending text messages|✔ Fully supported|
-|Sending images|✔ Fully supported|
-|Sending videos|❌ Not supported yet|
+|Sending images|✔ Supported (no titles for images provided by VK API, pictures can't be uploaded to custom albums with community token)*|
+|Sending videos|⚠ Partially supported (uploading videos with community token is not supported by VK API)*|
+|Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
+|Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
 |Sending documents|❌ Not supported yet|
 |Sending links|❌ Not supported yet|
 |Sending locations|❌ Not supported yet|
 |Sending stickers|❌ Not supported yet|
-|Sending voice messages|❌ Not supported yet|
 |Sending keyboards|⚠ Partially supported (under construction)|
 |Listening for images|✔ Supported (no titles for images provided by VK API)|
-|Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)|
+|Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)*|
 |Listening for audio|✔ Fully supported|
 |Listening for files|✔ Fully supported|
 |Listening for locations|✔ Fully supported|
+|Listening for voice messages|❌ Not supported yet|
 |Receiving messages with mixed attachments|✔ Fully supported|
 |Typing status|✔ Fully supported|
-|Mark seen|⚠ Partially supported (under construction)|
+|Mark seen|✔ Fully supported|
 |Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
 |Usage in VK conversations|⚠ Partially supported (under construction)|
 |Multiple communities handling|❌ Not supported yet|
+|VK API low-level management|❌ Not supported yet|
+|Events listener|❌ Not supported yet|
+
+\* \- uploading feature with user token is under construction
 
 ## Setup
 ### Getting the Community API key
@@ -130,6 +136,7 @@ If bot receives `Gimme some image` message, it will answer `Here it is!` with an
 $botman->hears('Gimme some image', function ($bot) {
     // Create attachment
     $attachment = new Image('https://botman.io/img/logo.png');
+    // $attachment->addExtras("vk_photo", "photo123456_123456"); // Or send an already uploaded photo (driver will ignore image url)    
 
     // Build message object
     $message = OutgoingMessage::create('Here it is!')
@@ -141,6 +148,18 @@ $botman->hears('Gimme some image', function ($bot) {
 ```
 
 ![Example image](https://i.imgur.com/XVLQn1f.png)
+
+### Sending a video as an attachment
+
+TODO
+
+### Sending an audio as an attachment
+
+TODO
+
+### Sending a voice message
+
+TODO
 
 ### Sending a message with simple keyboard
 
@@ -368,7 +387,9 @@ VK_USER_FIELDS="photo_200_orig, photo_50"
 
 See [User object](https://vk.com/dev/fields) for available fields.
 
+### Mark seen example
 
+TODO
 
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
