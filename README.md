@@ -358,7 +358,7 @@ $botman->hears('Gimme my photo_200_orig', function ($bot) {
 
 ![Example image](https://i.imgur.com/SlO8aTy.png)
 
-Multiple fields should be comma-divided:
+Multiple fields should be comma-separated:
 
 ```dotenv
 # ...
