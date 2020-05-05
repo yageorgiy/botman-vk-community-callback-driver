@@ -15,8 +15,8 @@ Table of driver's features:
 |Sending stickers|❌ Not supported yet|
 |Sending voice messages|❌ Not supported yet|
 |Sending keyboards|⚠ Partially supported (under construction)|
-|Listening for images|✔ Fully supported|
-|Listening for videos|⚠ Partially supported (no video URL provided by VK API)|
+|Listening for images|✔ Supported (no titles for images provided by VK API)|
+|Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)|
 |Listening for audio|✔ Fully supported|
 |Listening for files|✔ Fully supported|
 |Listening for locations|✔ Fully supported|
@@ -66,7 +66,7 @@ VK_API_VERSION=5.103                            # API version to be used for sen
 VK_MESSAGES_ENDPOINT=https://api.vk.com/method/ # VK API endpoint (don't change it if unnecessary)
 VK_CONFIRM="REPLACE_ME"                         # Confirmation phrase for VK (from Callback API tab, see above)
 VK_GROUP_ID="REPLACE_ME"                        # Community or group ID
-VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields ) (left blank for no extra fields)
+VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (left blank for no extra fields)
 ```
 
 If you don't use BotMan Studio, the driver should be applied manually:
@@ -85,7 +85,7 @@ BotManFactory::create([
         "endpoint" => "https://api.vk.com/method/", // VK API endpoint (don't change it if unnecessary)
         "confirm" => "REPLACE_ME",                  // Confirmation phrase for VK (from Callback API tab, see above)
         "group_id" => "REPLACE_ME",                 // Community or group ID
-        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields ) (left blank for no extra fields)
+        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (left blank for no extra fields)
     ]
 ]);
 
@@ -212,31 +212,163 @@ See [VK documentation page](https://vk.com/dev/bots_docs_3) for available colour
 
 ### Listening for images
 
-TODO
+Native way for receiving images.
+
+**Note**: no message text will be provided via `receivesImages()` method.
+
+```php
+$botman->receivesImages(function($bot, $images) {
+    foreach ($images as $image) {
+        $url = $image->getUrl(); // The direct url
+        $title = $image->getTitle(); // The title (empty string as titles are not supported by VK)
+        $payload = $image->getPayload(); // The original payload
+
+        $bot->reply("Detected image: {$url}");
+    }
+});
+```
+
+![Example image](https://i.imgur.com/ETJBzzN.png)
 
 ### Listening for videos
 
-TODO
+Native way for receiving videos.
+
+**Note**: no message text will be provided via `receivesVideos()` method.
+
+```php
+$botman->receivesVideos(function($bot, $videos) {
+    foreach ($videos as $video) {
+        $url = $video->getUrl(); // The direct url
+        $payload = $video->getPayload(); // The original payload
+
+        // For YouTube videos title can be accessed in the following way:
+        $bot->reply("Detected video: {$payload["title"]}");
+    }
+});
+```
+
+![Example image](https://i.imgur.com/w2pVLNJ.png)
 
 ### Listening for audio
 
-TODO
+Native way for receiving audio.
+
+**Note**: no message text will be provided via `receivesAudio()` method.
+
+```php
+$botman->receivesAudio(function($bot, $audios) {
+    foreach ($audios as $audio) {
+        $url = $audio->getUrl(); // The direct url
+        $payload = $audio->getPayload(); // The original payload
+
+        $bot->reply("Detected audio: {$url}");
+    }
+});
+```
+
+![Example image](https://i.imgur.com/6T48P04.png)
 
 ### Listening for documents (files)
 
-TODO
+Native way for receiving files.
+
+**Note**: no message text will be provided via `receivesFiles()` method.
+
+```php
+$botman->receivesFiles(function($bot, $files) {
+    foreach ($files as $file) {
+        $url = $file->getUrl(); // The direct url
+        $payload = $file->getPayload(); // The original payload
+
+        $bot->reply("Detected file (document): {$url}");
+    }
+});
+```
+
+![Example image](https://i.imgur.com/BszRFg6.png)
 
 ### Listening for location
 
-TODO
+Native way for receiving location.
+
+**Note**: no message text will be provided via `receivesLocation()` method.
+
+```php
+$botman->receivesLocation(function($bot, $location) {
+    $lat = $location->getLatitude();
+    $lng = $location->getLongitude();
+
+    $bot->reply("Detected location: $lat $lng");
+});
+```
+
+![Example image](https://i.imgur.com/tOl4hYn.png)
 
 ### Receiving messages with mixed attachments
 
-TODO
+Message with mixed attachments can be asked via `hears()`, `ask()` or `fallback()` method (`IncomingMessage` with message text and attachments with all supported types).
+
+Example with video and image attachments:
+
+```php
+$botman->hears('I have both image and video for you.', function ($bot) {
+    $bot->reply("Cool!");
+
+    // Scanning for images
+    $images = $bot->getMessage()->getImages() ?? [];
+    foreach ($images as $image) {
+
+        $url = $image->getUrl();
+
+        $bot->reply("Image found: {$url}");
+    }
+
+    // Scanning for videos
+    $videos = $bot->getMessage()->getVideos() ?? [];
+    foreach ($videos as $video) {
+        $payload = $video->getPayload();
+
+        $bot->reply("Video found: {$payload["title"]}");
+    }
+});
+```
+
+![Example image](https://i.imgur.com/f8FYnTt.png)
 
 ### Retrieving extra user data
 
-TODO
+Extra user fields should be defined in `.env` file and can be accessed via `getUser()->getInfo()` method.
+
+Example contents of `.env`:
+
+```dotenv
+# ...
+VK_USER_FIELDS="photo_200_orig"
+# ...
+```
+
+Example route:
+
+```php
+$botman->hears('Gimme my photo_200_orig', function ($bot) {
+    $bot->reply('Here it is: '.$bot->getUser()->getInfo()["photo_200_orig"]);
+});
+```
+
+![Example image](https://i.imgur.com/SlO8aTy.png)
+
+Multiple fields should be comma-divided:
+
+```dotenv
+# ...
+VK_USER_FIELDS="photo_200_orig, photo_50"
+# ...
+```
+
+See [User object](https://vk.com/dev/fields) for available fields.
+
+
 
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
@@ -246,4 +378,4 @@ TODO
 Contributions are welcome, I would be glad to accept contributions via Pull Requests. Of course, everyone will be mentioned in contributors list. 🙂
 
 ## License
-VK Community Callback driver is made under the terms of MIT licence. BotMan is free software distributed under the terms of the MIT license.
+VK Community Callback driver is made under the terms of MIT license. BotMan is free software distributed under the terms of the MIT license.
