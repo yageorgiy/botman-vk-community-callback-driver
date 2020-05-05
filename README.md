@@ -1,5 +1,9 @@
 # BotMan VK Community Callback driver
+
 BotMan driver to connect VK Community with [BotMan](https://github.com/botman/botman) via Callback API.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Packagist](https://img.shields.io/packagist/v/yageorgiy/botman-vk-community-callback-driver.svg)](https://packagist.org/packages/yageorgiy/botman-vk-community-callback-driver)
 
 ## Support
 Table of driver's features:
