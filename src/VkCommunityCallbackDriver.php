@@ -208,6 +208,7 @@ class VkCommunityCallbackDriver extends HttpDriver
             }
 
             $incomingMessage = $this->serializeIncomingMessage($message, $peer_id, $peer_id, $message_object);
+            $incomingMessage->addExtras("message_object", $message_object);
 
             $this->markSeen($incomingMessage);
 
@@ -402,7 +403,7 @@ class VkCommunityCallbackDriver extends HttpDriver
         $fields = $this->config->get("user_fields", "");
 
         $response = $this->api("users.get", [
-            "user_ids" => $matchingMessage->getSender(),
+            "user_ids" => $matchingMessage->getExtras("message_object")["from_id"],
             "fields" => $fields
         ], true);
 
@@ -412,7 +413,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
 
         // TODO: remade with proper user class suitable for VK user
-        return new User($matchingMessage->getSender(), $first_name, $last_name, $username, $response["response"][0]);
+        return new User($matchingMessage->getExtras("message_object")["from_id"], $first_name, $last_name, $username, $response["response"][0]);
     }
 
     /**
@@ -572,7 +573,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
                 // If error
                 if($uploadImg["photo"] == "[]")
-                    throw new VKException("Can't upload image to VK. Please, be sure that photo has correct extension.");
+                    throw new VKException("Can't upload image to VK. Please, be sure photo has correct extension.");
 
                 $saveImg = $this->api('photos.saveMessagesPhoto', [
                     'photo' => $uploadImg['photo'],
@@ -618,7 +619,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
                     // If error
                     if($upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
-                        throw new VKException("Can't upload file to VK. Please, be sure that audo has correct extension - ogg only. Learn more: https://vk.com/dev/upload_files_2");
+                        throw new VKException("Can't upload audio to VK. Please, be sure audo has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
 
                     $save = $this->api('docs.save', [
                         'file' => $upload['file']
@@ -631,6 +632,43 @@ class VkCommunityCallbackDriver extends HttpDriver
 
 
                 throw new VKException("Uploading audio is restricted by VK API");
+                break;
+
+            case "BotMan\BotMan\Messages\Attachments\File":
+                /** @var $attachment File */
+
+                // Just return already uploaded document
+                if(is_string($attachment->getExtras("vk_doc"))){
+                    $ret[] = $attachment->getExtras("vk_doc");
+                    break;
+                }
+
+                $getUpload = $this->api("docs.getMessagesUploadServer", [
+                    'peer_id' => $peer_id,
+                    'type' => "doc"
+                ], true);
+
+
+                $upload = $this->upload($getUpload["response"]['upload_url'], $attachment->getUrl());
+
+                // If error
+                if(!isset($upload["file"]) || $upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
+                    throw new VKException("Can't upload file to VK. Please, be sure file has correct extension.");
+
+
+                $_ = [
+                    'file' => $upload['file']
+                ];
+
+                if($attachment->getExtras("vk_doc_title") != null)
+                    $_["title"] = $attachment->getExtras("vk_doc_title");
+
+                if($attachment->getExtras("vk_doc_tags") != null)
+                    $_["tags"] = $attachment->getExtras("vk_doc_tags");
+
+                $save = $this->api('docs.save', $_, true);
+
+                $ret[] = "doc".$save["response"]["doc"]['owner_id']."_".$save["response"]["doc"]['id'];
                 break;
         }
 

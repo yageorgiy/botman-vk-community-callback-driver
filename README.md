@@ -15,7 +15,7 @@ Table of driver's features:
 |Sending videos|⚠ Partially supported (uploading videos with community token is not supported by VK API)*|
 |Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
 |Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
-|Sending documents|❌ Not supported yet|
+|Sending documents (files)|✔ Supported (any of *.mp3 and executable files are restricted by the platform to be uploaded)|
 |Sending links|❌ Not supported yet|
 |Sending locations|❌ Not supported yet|
 |Sending stickers|❌ Not supported yet|
@@ -106,7 +106,7 @@ BotManFactory::create([
 ## Usage examples
 *In usage examples, the used file is `routes/botman.php`.*
 
-### Sending a simple message
+### Sending simple message
 If bot receives `Hello` message, it will answer `Hi, <First Name>`:
 ```php
 $botman->hears('Hello', function ($bot) {
@@ -133,7 +133,7 @@ After all, it will answer:
 
 ![Example image](https://i.imgur.com/NR2zg2q.png)
 
-### Sending an image as an attachment
+### Attaching image
 If bot receives `Gimme some image` message, it will answer `Here it is!` with an attached image:
 
 ```php
@@ -153,19 +153,104 @@ $botman->hears('Gimme some image', function ($bot) {
 
 ![Example image](https://i.imgur.com/XVLQn1f.png)
 
-### Sending a video as an attachment
+### Attaching video
 
-TODO
+Example of sending an already uploaded video:
 
-### Sending an audio as an attachment
+**Note**: uploading videos to VK is not supported by the driver yet.
 
-TODO
+```php
+$botman->hears('Gimme some video', function ($bot) {
+    // Create attachment
+    $attachment = new Video('http://unused-video-url');
+    // Attaching already uploaded videos is the ONLY way to send them (as for now):
+    $attachment->addExtras("vk_video", "video-2000416976_41416976"); // Send an already uploaded video (driver will ignore video url)
 
-### Sending a voice message
+    // Build message object
+    $message = OutgoingMessage::create('Here it is!')
+        ->withAttachment($attachment);
 
-TODO
+    // Reply message object
+    $bot->reply($message);
+});
+```
 
-### Sending a message with simple keyboard
+![Example image](https://i.imgur.com/dPGi4w6.png)
+
+### Attaching audio
+
+Example of sending an already uploaded audio:
+
+**Note**: uploading audio to VK is restricted by the platform.
+
+```php
+$botman->hears('Gimme some audio', function ($bot) {
+    // Create attachment
+                            // URL can be uploaded ONLY as voice message (due to restrictions of VK)
+    $attachment = new Audio('https://unused-audio-url');
+    $attachment->addExtras("vk_audio", "audio371745438_456268888"); // Send an already uploaded audio (driver will ignore audio url and vk_as_voice parameter)
+
+    // Build message object
+    $message = OutgoingMessage::create('Here it is!')
+        ->withAttachment($attachment);
+
+    // Reply message object
+    $bot->reply($message);
+});
+```
+
+### Sending voice message
+
+Voice messages can be send using `Audio` with extra parameter `vk_as_voice = true`. 
+
+Example of sending a voice message with message text:
+
+**Note**: better to upload an *.ogg file rather than *.mp3, *.wav and others. See [Uploading Voice Message](https://vk.com/dev/upload_files_3) for more info.
+
+```php
+$botman->hears('Sing me a song', function ($bot) {
+    // Create attachment
+                            // URL can be uploaded ONLY as voice message (due to restrictions of VK)
+    $attachment = new Audio('https://url-to-ogg-file');
+//  $attachment->addExtras("vk_audio", "audio371745438_456268888"); // Send an already uploaded audio (driver will ignore audio url and vk_as_voice parameter)
+    $attachment->addExtras("vk_as_voice", true);                    // Send as voice message (better to use *.ogg file)
+
+    // Build message object
+    $message = OutgoingMessage::create('Well...')
+        ->withAttachment($attachment);
+
+    // Reply message object
+    $bot->reply($message);
+});
+```
+
+![Example image](https://i.imgur.com/ZqQS8tD.png)
+
+### Attaching document (file)
+
+Example of sending file:
+
+**Note**: not all files are available to upload. See [Uploading documents](https://vk.com/dev/upload_files_2?f=10.%2BUploading%2BDocuments) for more info.
+
+```php
+$botman->hears("Any files\?", function ($bot) {
+    $attachment = new File('https://url-to-file');
+//  $attachment->addExtras("vk_doc", "doc123456_123456"); // Send an already uploaded document (driver will ignore audio url and vk_doc_title, vk_doc_tags parameters)
+    $attachment->addExtras("vk_doc_title", "Cool guy.gif"); // Title
+    $attachment->addExtras("vk_doc_tags", "cool, guy"); // Document tags
+
+    // Build message object
+    $message = OutgoingMessage::create('Yep!')
+        ->withAttachment($attachment);
+
+    // Reply message object
+    $bot->reply($message);
+});
+```
+
+![Example image](https://i.imgur.com/MiFD3wm.png)
+
+### Sending simple keyboard
 
 Example of sending simple keyboard (**getting keyboard event is not completed yet**). Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard). Customization of this parameters is under construction, too.
 
@@ -393,7 +478,15 @@ See [User object](https://vk.com/dev/fields) for available fields.
 
 ### Mark seen example
 
-TODO
+Every message will be marked as seen even if there is no response for it:
+
+```php
+$botman->hears("Don\'t answer me", function ($bot) {
+    // Do nothing
+});
+```
+
+![Example image](https://i.imgur.com/pt1gwqA.png)
 
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
