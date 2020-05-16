@@ -222,7 +222,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
 
     /**
-     * Making up an incomming message
+     * Making up an incoming message
      *
      * @param $message
      * @param $sender
@@ -264,50 +264,51 @@ class VkCommunityCallbackDriver extends HttpDriver
         (($_ = $message_object["geo"] ?? []) && count($_) > 0) ? ($attachments["location"] = new Location($_["coordinates"]["latitude"], $_["coordinates"]["longitude"], $_)) : false;
 
 
+        // Make an incoming message with no text if it is so
+        if($message == ""){
+            // Returning message with images only
+            if(count($attachments) == 1 and isset($attachments["photos"])){
+                $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
+                $result->setImages($attachments["photos"]);
 
+                return $result;
+            }
 
-        // Returning message with images only
-        if(count($attachments) == 1 and isset($attachments["photos"])){
-            $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
-            $result->setImages($attachments["photos"]);
+            // Returning message with videos only
+            if(count($attachments) == 1 and isset($attachments["videos"])){
+                $result = new IncomingMessage(Video::PATTERN, $sender, $recipient, $this->payload);
+                $result->setVideos($attachments["videos"]);
 
-            return $result;
+                return $result;
+            }
+
+            // Returning message with audio only
+            if(count($attachments) == 1 and isset($attachments["audios"])){
+                $result = new IncomingMessage(Audio::PATTERN, $sender, $recipient, $this->payload);
+                $result->setAudio($attachments["audios"]);
+
+                return $result;
+            }
+
+            // Returning message with files only
+            if(count($attachments) == 1 and isset($attachments["files"])){
+                $result = new IncomingMessage(File::PATTERN, $sender, $recipient, $this->payload);
+                $result->setFiles($attachments["files"]);
+
+                return $result;
+            }
+
+            // Returning message with location only
+            if(count($attachments) == 1 and isset($attachments["location"])){
+                $result = new IncomingMessage(Location::PATTERN, $sender, $recipient, $this->payload);
+                $result->setLocation($attachments["location"]);
+
+                return $result;
+            }
         }
 
-        // Returning message with videos only
-        if(count($attachments) == 1 and isset($attachments["videos"])){
-            $result = new IncomingMessage(Video::PATTERN, $sender, $recipient, $this->payload);
-            $result->setVideos($attachments["videos"]);
-
-            return $result;
-        }
-
-        // Returning message with audio only
-        if(count($attachments) == 1 and isset($attachments["audios"])){
-            $result = new IncomingMessage(Audio::PATTERN, $sender, $recipient, $this->payload);
-            $result->setAudio($attachments["audios"]);
-
-            return $result;
-        }
-
-        // Returning message with files only
-        if(count($attachments) == 1 and isset($attachments["files"])){
-            $result = new IncomingMessage(File::PATTERN, $sender, $recipient, $this->payload);
-            $result->setFiles($attachments["files"]);
-
-            return $result;
-        }
-
-        // Returning message with location only
-        if(count($attachments) == 1 and isset($attachments["location"])){
-            $result = new IncomingMessage(Location::PATTERN, $sender, $recipient, $this->payload);
-            $result->setLocation($attachments["location"]);
-
-            return $result;
-        }
-
-        // Returning message with mixed attachments
-        if(count($attachments) > 1){
+        // Returning message with mixed attachments or with text given
+        if(count($attachments) >= 1){
             $result = new IncomingMessage($message, $sender, $recipient, $this->payload);
             if(isset($attachments["photos"])) $result->setImages($attachments["photos"]);
             if(isset($attachments["videos"])) $result->setVideos($attachments["videos"]);
