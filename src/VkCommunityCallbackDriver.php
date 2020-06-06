@@ -440,7 +440,7 @@ class VkCommunityCallbackDriver extends HttpDriver
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
         $text = $message->getText();
-        $peer_id = $matchingMessage->getRecipient();
+        $peer_id = ($matchingMessage->getRecipient() != "") ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
         $data = [
             "peer_id" => $peer_id,
