@@ -425,7 +425,18 @@ class VkCommunityCallbackDriver extends HttpDriver
      */
     public function getConversationAnswer(IncomingMessage $message)
     {
-        return Answer::create($message->getText())->setMessage($message);
+
+        $answer = Answer::create($message->getText())->setMessage($message);
+
+        $message_object = $message->getExtras("message_object");
+
+        if(isset($message_object["payload"])){
+            $answer->setInteractiveReply(true);
+            $answer->setText($message_object["text"]);
+            $answer->setValue($message->getText());
+        }
+
+        return $answer;
     }
 
     /**
