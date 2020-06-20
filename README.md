@@ -16,9 +16,9 @@ Table of driver's features:
 |Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
 |Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
 |Sending documents (files)|✔ Supported (any of *.mp3 and executable files are restricted by the platform to be uploaded)|
-|Sending links|❌ Not supported yet|
-|Sending locations|❌ Not supported yet|
-|Sending stickers|❌ Not supported yet|
+|Sending links|⚠ Partially supported (via sending a low-level API request, under construction)|
+|Sending locations|⚠ Partially supported (via sending a low-level API request, under construction)|
+|Sending stickers|⚠ Partially supported (via sending a low-level API request, under construction)|
 |Sending keyboards|⚠ Partially supported (under construction)|
 |Listening for images|✔ Supported (no titles for images provided by VK API)|
 |Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)*|
@@ -32,8 +32,8 @@ Table of driver's features:
 |Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
 |Usage in VK conversations|⚠ Partially supported (under construction)|
 |Multiple communities handling|❌ Not supported yet|
-|VK API low-level management|❌ Not supported yet|
-|Events listener|❌ Not supported yet|
+|VK API low-level management|✔ Fully supported|
+|Events listener|✔ Fully supported (as for 20.06.2020)|
 
 \* \- uploading feature with user token is under construction
 
@@ -74,9 +74,9 @@ VK_ACCESS_TOKEN="REPLACE_ME"                    # User or community token for se
 VK_SECRET_KEY="REPLACE_ME"                      # Secret phrase for validating the request sender (from Callback API tab, see above)
 VK_API_VERSION=5.103                            # API version to be used for sending an receiving messages (should be 5.103 and higher) (not recommended to change)
 VK_MESSAGES_ENDPOINT=https://api.vk.com/method/ # VK API endpoint (don't change it if unnecessary)
-VK_CONFIRM="REPLACE_ME"                         # Confirmation phrase for VK (from Callback API tab, see above)
+VK_CONFIRM=                                     # DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Confirming the bot' section. Confirmation phrase for VK
 VK_GROUP_ID="REPLACE_ME"                        # Community or group ID
-VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (left blank for no extra fields)
+VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
 ```
 
 If you don't use BotMan Studio, the driver should be applied manually:
@@ -93,15 +93,32 @@ BotManFactory::create([
         "secret" => "REPLACE_ME",                   // Secret phrase for validating the request sender (from Callback API tab, see above)
         "version" => "5.103",                       // API version to be used for sending an receiving messages (should be 5.103 and higher) (not recommended to change)
         "endpoint" => "https://api.vk.com/method/", // VK API endpoint (don't change it if unnecessary)
-        "confirm" => "REPLACE_ME",                  // Confirmation phrase for VK (from Callback API tab, see above)
+        "confirm" => "",                            // DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Confirming the bot' section. Confirmation phrase for VK
         "group_id" => "REPLACE_ME",                 // Community or group ID
-        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (left blank for no extra fields)
+        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
     ]
 ]);
 
 // ...
 ```
 
+### Confirming the bot
+
+**⚠ Important note.** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
+
+- Find the string (validation code) in section `String to be returned`:
+
+![Callback API tab](https://i.imgur.com/2HoB6lu.png)
+
+- Add the following code to `routes/botman.php` file, replace `REPLACE_ME` with the validation code (e.g. `1a2b3c4d5e`):
+
+```php
+$botman->on("confirmation", function($payload, $bot){
+    echo("REPLACE_ME");
+});
+```
+
+- Click `Confirm` button.
 
 ## Usage examples
 *In usage examples, the used file is `routes/botman.php`.*
@@ -476,6 +493,26 @@ VK_USER_FIELDS="photo_200_orig, photo_50"
 
 See [User object](https://vk.com/dev/fields) for available fields.
 
+
+### Retrieving extra client information
+
+Information about supported features of user's VK client can be accessed via `$bot->getMessage()->getExtras("client_info")`:
+
+**Note:** the feature works only with new messages sent (`message_new` event).
+
+```php
+$botman->hears('my info', function(BotMan $bot) {
+    // Prints raw "client_info" array
+    $bot->reply(print_r($bot->getMessage()->getExtras("client_info"), true));
+});
+```
+
+![The reply](https://i.imgur.com/cxINTnA.png)
+
+
+See [Information about features available to the user](https://vk.com/dev/bots_docs?f=2.3.%20Information%20about%20features%20available%20to%20the%20user) for more details.
+
+
 ### Mark seen example
 
 Every message will be marked as seen even if there is no response for it:
@@ -488,12 +525,106 @@ $botman->hears("Don\'t answer me", function ($bot) {
 
 ![Example image](https://i.imgur.com/pt1gwqA.png)
 
+### Listening to events
+
+List of supported events:
+- `confirmation`
+- `message_allow`
+- `message_deny`
+- `message_typing_state`        **
+- `photo_new`
+- `photo_comment_new`
+- `photo_comment_edit`
+- `photo_comment_restore`
+- `photo_comment_delete`
+- `audio_new`
+- `video_new`
+- `video_comment_new`
+- `video_comment_edit`
+- `video_comment_restore`
+- `video_comment_delete`
+- `wall_post_new`
+- `wall_repost`
+- `wall_reply_new`
+- `wall_reply_edit`
+- `wall_reply_restore`
+- `wall_reply_delete`
+- `board_post_new`
+- `board_post_edit`
+- `board_post_restore`
+- `board_post_delete`
+- `market_comment_new`
+- `market_comment_edit`
+- `market_comment_restore`
+- `market_comment_delete`
+- `market_order_new`            *
+- `market_order_edit`           *
+- `group_leave`
+- `group_join`
+- `user_block`
+- `user_unblock`
+- `poll_vote_new`
+- `group_officers_edit`
+- `group_change_settings`
+- `group_change_photo`
+- `vkpay_transaction`           *
+- `app_payload`                 *
+- `like_add`                    *
+- `like_remove`                 *
+
+\* - missing english version in VK docs, but feature exists (as for 20.06.2020)
+
+\*\* - missing in VK docs, but feature exists (as for 20.06.2020)
+
+**Note:** events of `message_new`, `message_reply`, `message_edit` are assessable via Hearing Messages functions (e.g. `$botman->hear()`).
+
+[Full list of events (VK docs)](https://vk.com/dev/groups_events)
+
+Example of sending message when the typing state changed:
+
+```php
+$botman->on("message_typing_state", function($payload, $bot){
+    // $payload is an array of the event object ("Object field format")
+    // see https://vk.com/dev/groups_events for more info
+    $bot->say("Hey! You're typing something!", $payload["from_id"]);
+});
+```
+
+The result:
+
+![The result image](https://i.imgur.com/lNhp9si.png)
+
+### Sending low-level API requests
+
+Example of sending a sticker:
+
+```php
+$botman->hears('sticker', function($bot) {
+    // API method
+    $endpoint = "messages.send";
+    
+    // Arguments ("v" and "access_token" are set by driver, no need to define)
+    $arguments = [
+         "peer_id" => $bot->getUser()->getId(), // User ID
+         "sticker_id" => 12, // Sticker ID
+         "random_id" => rand(10000,100000) // Random ID (required by VK API, to prevent doubling messages)
+     ];
+
+    $test = $bot->sendRequest($endpoint, $arguments);
+    // $test = ["response" => 1234];
+});
+```
+
+The result:
+
+![The result of sticker sending](https://i.imgur.com/DyIjsww.png)
+
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
 - [BotMan documentation](https://botman.io/2.0/welcome)
 
 ## Contributing
-Contributions are welcome, I would be glad to accept contributions via Pull Requests. Of course, everyone will be mentioned in contributors list. 🙂
+Contributions are welcome, I would be glad to accept contributions via Pull Requests. Of course, everyone will be mentioned in the contributors list. 🙂
 
 ## License
 VK Community Callback driver is made under the terms of MIT license. BotMan is free software distributed under the terms of the MIT license.

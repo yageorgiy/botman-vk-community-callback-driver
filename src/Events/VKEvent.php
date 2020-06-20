@@ -6,6 +6,7 @@ use BotMan\BotMan\Interfaces\DriverEventInterface;
 
 abstract class VKEvent implements DriverEventInterface
 {
+    /** @var array */
     protected $payload;
 
     /**

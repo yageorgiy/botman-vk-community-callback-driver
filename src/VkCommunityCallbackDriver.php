@@ -4,28 +4,71 @@ namespace BotMan\Drivers\VK;
 use BotMan\BotMan\Drivers\Events\GenericEvent;
 use BotMan\BotMan\Drivers\HttpDriver;
 use BotMan\BotMan\Interfaces\DriverEventInterface;
+use BotMan\BotMan\Messages\Attachments\Audio;
 use BotMan\BotMan\Messages\Attachments\File;
 use BotMan\BotMan\Messages\Attachments\Image;
 use BotMan\BotMan\Messages\Attachments\Location;
 use BotMan\BotMan\Messages\Attachments\Video;
-use BotMan\BotMan\Messages\Attachments\Audio;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use BotMan\BotMan\Users\User;
+use BotMan\Drivers\VK\Events\AppPayload;
+use BotMan\Drivers\VK\Events\AudioNew;
+use BotMan\Drivers\VK\Events\BoardPostDelete;
+use BotMan\Drivers\VK\Events\BoardPostEdit;
+use BotMan\Drivers\VK\Events\BoardPostNew;
+use BotMan\Drivers\VK\Events\BoardPostRestore;
 use BotMan\Drivers\VK\Events\Confirmation;
+use BotMan\Drivers\VK\Events\GroupChangePhoto;
+use BotMan\Drivers\VK\Events\GroupChangeSettings;
+use BotMan\Drivers\VK\Events\GroupJoin;
+use BotMan\Drivers\VK\Events\GroupLeave;
+use BotMan\Drivers\VK\Events\GroupOfficersEdit;
+use BotMan\Drivers\VK\Events\LikeAdd;
+use BotMan\Drivers\VK\Events\LikeRemove;
+use BotMan\Drivers\VK\Events\MarketCommentDelete;
+use BotMan\Drivers\VK\Events\MarketCommentEdit;
+use BotMan\Drivers\VK\Events\MarketCommentNew;
+use BotMan\Drivers\VK\Events\MarketCommentRestore;
+use BotMan\Drivers\VK\Events\MarketOrderEdit;
+use BotMan\Drivers\VK\Events\MarketOrderNew;
+use BotMan\Drivers\VK\Events\MessageAllow;
+use BotMan\Drivers\VK\Events\MessageDeny;
 use BotMan\Drivers\VK\Events\MessageEdit;
 use BotMan\Drivers\VK\Events\MessageNew;
 use BotMan\Drivers\VK\Events\MessageReply;
-use BotMan\Drivers\VK\Exceptions\VKException;
+use BotMan\Drivers\VK\Events\MessageTypingState;
+use BotMan\Drivers\VK\Events\PhotoCommentDelete;
+use BotMan\Drivers\VK\Events\PhotoCommentEdit;
+use BotMan\Drivers\VK\Events\PhotoCommentNew;
+use BotMan\Drivers\VK\Events\PhotoCommentRestore;
+use BotMan\Drivers\VK\Events\PhotoNew;
+use BotMan\Drivers\VK\Events\PollVoteNew;
+use BotMan\Drivers\VK\Events\UserBlock;
+use BotMan\Drivers\VK\Events\UserUnblock;
+use BotMan\Drivers\VK\Events\VideoCommentDelete;
+use BotMan\Drivers\VK\Events\VideoCommentEdit;
+use BotMan\Drivers\VK\Events\VideoCommentNew;
+use BotMan\Drivers\VK\Events\VideoCommentRestore;
+use BotMan\Drivers\VK\Events\VideoNew;
+use BotMan\Drivers\VK\Events\VKEvent;
+use BotMan\Drivers\VK\Events\VKPayTransaction;
+use BotMan\Drivers\VK\Events\WallPostNew;
+use BotMan\Drivers\VK\Events\WallReplyDelete;
+use BotMan\Drivers\VK\Events\WallReplyEdit;
+use BotMan\Drivers\VK\Events\WallReplyNew;
+use BotMan\Drivers\VK\Events\WallReplyRestore;
+use BotMan\Drivers\VK\Events\WallRepost;
+use BotMan\Drivers\VK\Exceptions\VKDriverDeprecatedFeature;
+use BotMan\Drivers\VK\Exceptions\VKDriverException;
 use CURLFile;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\ParameterBag;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
-class VkCommunityCallbackDriver extends HttpDriver
-{
+class VkCommunityCallbackDriver extends HttpDriver {
     const DRIVER_NAME = "VK Community Callback Driver";
 
     /**
@@ -62,9 +105,9 @@ class VkCommunityCallbackDriver extends HttpDriver
     private $reply = false;
 
     /**
-     * @var
+     * @var VKEvent
      */
-//    private $driverEvent;
+    private $driverEvent;
 
 
     /**
@@ -72,8 +115,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @param Request $request
      */
-    public function buildPayload(Request $request)
-    {
+    public function buildPayload(Request $request) {
         // Setting IP-address
         $this->ip = $request->getClientIp();
         // Setting the payload, which contains all JSON data sent by VK
@@ -91,26 +133,25 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * Manages the text to be echoed for VK API
      */
-    protected function reply()
-    {
+    protected function reply() {
         if(!$this->reply){
             ob_end_clean();
             header("Connection: close");
             ignore_user_abort(true);
             ob_start();
 
-            switch($this->payload->get("type")){
-                // Echo OK for incoming messages
-                case "message_new":
-                case "message_reply":
-                case "message_edit":
 
-                    $this->ok();
+
+            switch($this->payload->get("type")){
+                // Echo the confirmation token
+                // [DEPRECATED] Use $botman->on("confirmation", function($payload, Botman $bot){ echo("token"); }); in routes/botman.php instead
+                case "confirmation":
+//                    $this->echoConfirmationToken();
                     break;
 
-                // Echo the confirmation token
-                case "confirmation":
-                    $this->echoConfirmationToken();
+                // Echo OK for all incoming events
+                default:
+                    $this->ok();
                     break;
             }
 
@@ -134,8 +175,7 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * Echos 'ok'
      */
-    public function ok()
-    {
+    public function ok() {
         if(!$this->ok){
             echo("ok");
             $this->ok = true;
@@ -144,9 +184,9 @@ class VkCommunityCallbackDriver extends HttpDriver
 
     /**
      * Echoes confirmation pass-phrase
+     * @deprecated deprecated since 1.4.2
      */
-    public function echoConfirmationToken()
-    {
+    public function echoConfirmationToken() {
         //TODO: save output?
         echo($this->config->get("confirm"));
     }
@@ -156,28 +196,37 @@ class VkCommunityCallbackDriver extends HttpDriver
      * Determine if the request is for this driver.
      *
      * @return bool
+     * @throws VKDriverDeprecatedFeature
+     * @throws VKDriverException
      */
-    public function matchesRequest()
-    {
+    public function matchesRequest() {
         //TODO: anything else?
+        //TODO: verification via implementing VerifiesService's verifyRequest() method
 
-        return
-            !is_null($this->payload->get("secret")) &&
+        $check = !is_null($this->payload->get("secret")) &&
             $this->payload->get("secret") == $this->config->get("secret") &&
             !is_null($this->payload->get("group_id")) &&
-            $this->payload->get("group_id") == $this->config->get("group_id"); //&&
-//            preg_match('/95\.142\.([0-9]+)\.([0-9]+)/', $this->ip) === true; //TODO: ip checkups for production server
+            $this->payload->get("group_id") == $this->config->get("group_id");
+        //&&
+//              preg_match('/95\.142\.([0-9]+)\.([0-9]+)/', $this->ip) === true; //TODO: ip checkups for production server
+
+        // Stop performing the request if errors
+        if($check) $this->configurationCheckUp();
+
+        return $check;
+
     }
 
     /**
      * Retrieve the chat message(s).
      *
      * @return array
+     * @throws VKDriverException
      */
-    public function getMessages()
-    {
+    public function getMessages() {
 
-        $this->reply();
+        if($this->payload->get("type") != "confirmation")
+            $this->reply(); // Reply 'ok' for all events (except confirmation)
 
         if (empty($this->messages)) {
             $message = "generic";
@@ -185,6 +234,9 @@ class VkCommunityCallbackDriver extends HttpDriver
             $message_object = [];
 
             // message_new and message_reply / message_edit has different JSON schemas!
+
+            $message_event = true;
+
             switch($this->payload->get("type")){
                 case "message_new":
                     $message_object = $this->payload->get("object")["message"];
@@ -198,26 +250,38 @@ class VkCommunityCallbackDriver extends HttpDriver
                     $message = $this->payload->get("object")["text"];
                     $peer_id = $this->payload->get("object")["peer_id"];
                     break;
-            }
-            $this->peer_id = $peer_id;
 
-            // Replacing button's value from payload to message text
-            if(isset($message_object["payload"])){
-                $payload_text = json_decode($message_object["payload"], true)["__message"];
-                if(isset($payload_text) && $payload_text != null) $message = $payload_text;
+                default:
+                    $message_event = false;
+                    break;
             }
 
-            $incomingMessage = $this->serializeIncomingMessage($message, $peer_id, $peer_id, $message_object);
-            $incomingMessage->addExtras("message_object", $message_object);
+            if($message_event){
+                $this->peer_id = $peer_id;
 
-            $this->markSeen($incomingMessage);
+                // Replacing button's value from payload to message text
+                if(isset($message_object["payload"])){
+                    $payload_text = json_decode($message_object["payload"], true)["__message"];
+                    if(isset($payload_text) && $payload_text != null) $message = $payload_text;
+                }
 
-            $this->messages = [$incomingMessage];
+                $incomingMessage = $this->serializeIncomingMessage($message, $peer_id, $peer_id, $message_object);
+                $incomingMessage->addExtras("message_object", $message_object);
+
+                // Client information (only for new messages)
+                if(isset($this->payload->get("object")["client_info"]))
+                    $incomingMessage->addExtras("client_info", $this->payload->get("object")["client_info"]);
+
+                $this->markSeen($incomingMessage);
+
+                $this->messages = [$incomingMessage];
+            }
+
         }
 
 
 
-        return $this->messages;
+        return $this->messages ?? [];
     }
 
 
@@ -230,8 +294,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param $message_object
      * @return IncomingMessage
      */
-    private function serializeIncomingMessage($message, $sender, $recipient, $message_object)
-    {
+    private function serializeIncomingMessage($message, $sender, $recipient, $message_object) {
         $attachments = [];
         $collection = Collection::make($message_object["attachments"]);
 
@@ -328,14 +391,67 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @return bool
      */
-    public function isConfigured()
-    {
+    public function isConfigured() {
+
+        $anyExceptions = false;
+        try{
+            $this->configurationCheckUp();
+        } catch (VKDriverDeprecatedFeature $e){
+            $anyExceptions = true;
+        } catch (VKDriverException $e){
+            $anyExceptions = true;
+        }
+
         return
-            !empty($this->config->get('secret')) &&
-            !empty($this->config->get('token')) &&
-            !empty($this->config->get('version')) &&
-            version_compare($this->config->get('version'), "5.103", ">=");
+            !$anyExceptions; // &&
+//            !empty($this->config->get('secret')) &&
+//            !empty($this->config->get('token')) &&
+//            !empty($this->config->get('version')) &&
+//            version_compare($this->config->get('version'), "5.103", ">=");
     }
+
+
+    /**
+     *
+     *
+     * @return bool
+     * @throws VKDriverDeprecatedFeature
+     * @throws VKDriverException
+     */
+    public function configurationCheckUp(){
+        // Error of deprecated and unused feature of VK_CONFIRM
+        if(!empty($this->config->get("confirm")) || $this->config->get("confirm") != ""){
+            throw new VKDriverDeprecatedFeature(
+                "VK_CONFIRM (or \$botmanSettings[\"vk\"][\"confirm\"]) field is no longer used by driver. Please, just leave it blank (empty string) and use \$botman->on(); feature (in routes/botman.php) to echo confirmation pass-phrase. ".
+                "Example code: ".
+                "\$botman->on(\"confirmation\", function(\$payload, \$bot){ echo(\"CONFIRMATION_TOKEN_HERE\"); });"
+            );
+        }
+
+        // Error if token is empty
+        if(empty($this->config->get("token")) || $this->config->get("token") == ""){
+            throw new VKDriverException("VK_ACCESS_TOKEN (or \$botmanSettings[\"vk\"][\"token\"]) is empty, but required by the driver. Please, add VK_ACCESS_TOKEN field with community access token to .env file in project's root folder (or configure settings via BotManFactory::create()). Example: VK_ACCESS_TOKEN=1a2b**************3c4d");
+        }
+
+        // Error if secret is empty
+        if(empty($this->config->get("secret")) || $this->config->get("secret") == ""){
+            throw new VKDriverException("VK_SECRET_KEY (or \$botmanSettings[\"vk\"][\"secret\"]) is empty, but required by the driver. Please, add VK_SECRET_KEY field with secret key to .env file in project's root folder (or configure settings via BotManFactory::create()). Example: VK_SECRET_KEY=i_love_apples");
+        }
+
+        // Error if version is empty
+        if(empty($this->config->get("version")) || $this->config->get("version") == ""){
+            throw new VKDriverException("VK_API_VERSION (or \$botmanSettings[\"vk\"][\"version\"]) is empty, but required by the driver. Please, add VK_API_VERSION field with version number to .env file in project's root folder (or configure settings via BotManFactory::create()). Note: driver supports API version newer than 5.103 only. Example: VK_API_VERSION=5.107");
+        }
+
+        // Error if version is incorrect
+        if(!version_compare($this->config->get('version'), "5.103", ">=")){
+            throw new VKDriverException("VK_API_VERSION (or \$botmanSettings[\"vk\"][\"version\"]) is older than version 5.103. Please, use 5.103 API version or greater.");
+        }
+
+        return true;
+    }
+
+
 
     /**
      * Setting the driver event via payload
@@ -346,50 +462,250 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @return DriverEventInterface|bool
      */
-//    public function hasMatchingEvent() {
-//        if (!is_null($this->payload)) {
-//            $this->driverEvent = $this->getEventFromEventData($this->payload);
-//            return $this->driverEvent;
-//        }
-//
-//        return false;
-//    }
+    public function hasMatchingEvent() {
+        if (!is_null($this->payload)) {
+            $this->driverEvent = $this->getEventFromEventData($this->payload);
+
+            // Ignore incomming messages (used by Botman-native operations like hears(), etc.)
+            switch ($this->driverEvent->getName()){
+                case "message_new":
+                case "message_edit":
+                case "message_reply":
+                    return true;
+                    break;
+            }
+
+            // Return other events
+            return $this->driverEvent;
+        }
+
+        return false;
+    }
 
     /**
      * Generating event from payload
      *
-     * @param $eventData
-     * @return GenericEvent|Confirmation|MessageEdit|MessageNew|MessageReply
+     * @param Collection|ParameterBag $eventData
+     * @return array|GenericEvent|AppPayload|AudioNew|BoardPostDelete|BoardPostEdit|BoardPostNew|BoardPostRestore|Confirmation|GroupChangePhoto|GroupChangeSettings|GroupJoin|GroupLeave|GroupOfficersEdit|LikeAdd|LikeRemove|MarketCommentDelete|MarketCommentEdit|MarketCommentNew|MarketCommentRestore|MarketOrderNew|MessageAllow|MessageDeny|MessageEdit|MessageNew|MessageReply|MessageTypingState|PhotoCommentDelete|PhotoCommentEdit|PhotoCommentNew|PhotoCommentRestore|PhotoNew|PollVoteNew|UserBlock|UserUnblock|VideoCommentDelete|VideoCommentEdit|VideoCommentNew|VideoCommentRestore|VideoNew|VKPayTransaction|WallPostNew|WallReplyDelete|WallReplyEdit|WallReplyNew|WallReplyRestore|WallRepost|MarketOrderEdit
      */
-//    protected function getEventFromEventData($eventData)
-//    {
-//        $name = (string) $eventData->get("type");
-//        $event = (array) $eventData->get("object") ?? [];
-//        switch ($name) {
-//            case 'message_new':
-//                return new MessageNew($event);
-//                break;
-//
-//            case 'message_edit':
-//                return new MessageEdit($event);
-//                break;
-//
-//            case 'message_reply':
-//                return new MessageReply($event);
-//                break;
-//
-//            case 'confirmation':
-//                return new Confirmation($event);
-//                break;
-//
-//            default:
-//                $event = new GenericEvent($event);
-//                $event->setName($name);
-//
-//                return $event;
-//                break;
-//        }
-//    }
+    protected function getEventFromEventData($eventData)
+    {
+        $name = (string) $eventData->get("type");
+        $event = (array) $eventData->get("object") ?? [];
+        switch ($name) {
+
+            case 'confirmation':
+                return new Confirmation($eventData);
+                break;
+
+
+            // All events of russian docs of https://vk.com/dev/groups_events (english docs are deprecated?)
+            // incl. message_typing_state which is missing in official VK docs for some reason
+
+            case 'message_new':
+                return new MessageNew($event);
+                break;
+
+            case 'message_edit':
+                return new MessageEdit($event);
+                break;
+
+            case 'message_reply':
+                return new MessageReply($event);
+                break;
+
+            case 'message_allow':
+                return new MessageAllow($event);
+                break;
+
+            case 'message_deny':
+                return new MessageDeny($event);
+                break;
+
+            case 'message_typing_state':
+                return new MessageTypingState($event);
+                break;
+
+
+
+            case 'photo_new':
+                return new PhotoNew($event);
+                break;
+
+            case 'photo_comment_new':
+                return new PhotoCommentNew($event);
+                break;
+
+            case 'photo_comment_edit':
+                return new PhotoCommentEdit($event);
+                break;
+
+            case 'photo_comment_restore':
+                return new PhotoCommentRestore($event);
+                break;
+
+            case 'photo_comment_delete':
+                return new PhotoCommentDelete($event);
+                break;
+
+
+
+            case 'audio_new':
+                return new AudioNew($event);
+                break;
+
+
+
+            case 'video_new':
+                return new VideoNew($event);
+                break;
+
+            case 'video_comment_new':
+                return new VideoCommentNew($event);
+                break;
+
+            case 'video_comment_edit':
+                return new VideoCommentEdit($event);
+                break;
+
+            case 'video_comment_restore':
+                return new VideoCommentRestore($event);
+                break;
+
+            case 'video_comment_delete':
+                return new VideoCommentDelete($event);
+                break;
+
+
+
+            case 'wall_post_new':
+                return new WallPostNew($event);
+                break;
+
+            case 'wall_repost':
+                return new WallRepost($event);
+                break;
+
+            case 'wall_reply_new':
+                return new WallReplyNew($event);
+                break;
+
+            case 'wall_reply_edit':
+                return new WallReplyEdit($event);
+                break;
+
+            case 'wall_reply_restore':
+                return new WallReplyRestore($event);
+                break;
+
+            case 'wall_reply_delete':
+                return new WallReplyDelete($event);
+                break;
+
+
+
+            case 'board_post_new':
+                return new BoardPostNew($event);
+                break;
+
+            case 'board_post_edit':
+                return new BoardPostEdit($event);
+                break;
+
+            case 'board_post_restore':
+                return new BoardPostRestore($event);
+                break;
+
+            case 'board_post_delete':
+                return new BoardPostDelete($event);
+                break;
+
+
+
+            case 'market_comment_new':
+                return new MarketCommentNew($event);
+                break;
+
+            case 'market_comment_edit':
+                return new MarketCommentEdit($event);
+                break;
+
+            case 'market_comment_restore':
+                return new MarketCommentRestore($event);
+                break;
+
+            case 'market_comment_delete':
+                return new MarketCommentDelete($event);
+                break;
+
+            case 'market_order_new':
+                return new MarketOrderNew($event);
+                break;
+
+            case 'market_order_edit':
+                return new MarketOrderEdit($event);
+                break;
+
+
+
+            case 'group_leave':
+                return new GroupLeave($event);
+                break;
+
+            case 'group_join':
+                return new GroupJoin($event);
+                break;
+
+            case 'user_block':
+                return new UserBlock($event);
+                break;
+
+            case 'user_unblock':
+                return new UserUnblock($event);
+                break;
+
+
+
+            case 'poll_vote_new':
+                return new PollVoteNew($event);
+                break;
+
+            case 'group_officers_edit':
+                return new GroupOfficersEdit($event);
+                break;
+
+            case 'group_change_settings':
+                return new GroupChangeSettings($event);
+                break;
+
+            case 'group_change_photo':
+                return new GroupChangePhoto($event);
+                break;
+
+            case 'vkpay_transaction':
+                return new VKPayTransaction($event);
+                break;
+
+            case 'app_payload':
+                return new AppPayload($event);
+                break;
+
+            case 'like_add':
+                return new LikeAdd($event);
+                break;
+
+            case 'like_remove':
+                return new LikeRemove($event);
+                break;
+
+            default:
+                $event = new GenericEvent($event);
+                $event->setName($name);
+
+                return $event;
+                break;
+        }
+    }
 
 
     /**
@@ -397,6 +713,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @param IncomingMessage $matchingMessage
      * @return User
+     * @throws VKDriverException
      */
     public function getUser(IncomingMessage $matchingMessage)
     {
@@ -446,7 +763,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param IncomingMessage $matchingMessage
      * @param array $additionalParameters
      * @return array
-     * @throws VKException
+     * @throws VKDriverException
      */
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
@@ -558,7 +875,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param IncomingMessage $matchingMessage
      * @param $attachment
      * @return array
-     * @throws VKException
+     * @throws VKDriverException
+     * @throws VKDriverException
      */
     private function prepareAttachments($matchingMessage, $attachment){
         $ret = [];
@@ -585,7 +903,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
                 // If error
                 if($uploadImg["photo"] == "[]")
-                    throw new VKException("Can't upload image to VK. Please, be sure photo has correct extension.");
+                    throw new VKDriverException("Can't upload image to VK. Please, be sure photo has correct extension.");
 
                 $saveImg = $this->api('photos.saveMessagesPhoto', [
                     'photo' => $uploadImg['photo'],
@@ -607,7 +925,7 @@ class VkCommunityCallbackDriver extends HttpDriver
                 }
 
                 // TODO: upload video with user token feature
-                throw new VKException("Uploading videos with community token is not supported by VK API (uploading with user token is under construction)");
+                throw new VKDriverException("Uploading videos with community token is not supported by VK API (uploading with user token is under construction)");
                 break;
 
             case "BotMan\BotMan\Messages\Attachments\Audio":
@@ -631,7 +949,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
                     // If error
                     if($upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
-                        throw new VKException("Can't upload audio to VK. Please, be sure audo has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
+                        throw new VKDriverException("Can't upload audio to VK. Please, be sure audo has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
 
                     $save = $this->api('docs.save', [
                         'file' => $upload['file']
@@ -643,7 +961,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
 
 
-                throw new VKException("Uploading audio is restricted by VK API");
+                throw new VKDriverException("Uploading audio is restricted by VK API");
                 break;
 
             case "BotMan\BotMan\Messages\Attachments\File":
@@ -665,7 +983,7 @@ class VkCommunityCallbackDriver extends HttpDriver
 
                 // If error
                 if(!isset($upload["file"]) || $upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
-                    throw new VKException("Can't upload file to VK. Please, be sure file has correct extension.");
+                    throw new VKDriverException("Can't upload file to VK. Please, be sure file has correct extension.");
 
 
                 $_ = [
@@ -693,6 +1011,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @param mixed $payload
      * @return Response
+     * @throws VKDriverException
      */
     public function sendPayload($payload)
     {
@@ -705,11 +1024,12 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param string $endpoint
      * @param array $parameters
      * @param IncomingMessage $matchingMessage
-     * @return void
+     * @return array
+     * @throws VKDriverException
      */
     public function sendRequest($endpoint, array $parameters, IncomingMessage $matchingMessage)
     {
-
+        return $this->api($endpoint, $parameters, true);
     }
 
     /**
@@ -717,6 +1037,7 @@ class VkCommunityCallbackDriver extends HttpDriver
      *
      * @param IncomingMessage $matchingMessage
      * @return bool|void
+     * @throws VKDriverException
      */
     public function types(IncomingMessage $matchingMessage)
     {
@@ -731,6 +1052,7 @@ class VkCommunityCallbackDriver extends HttpDriver
     /**
      * @param IncomingMessage $matchingMessage
      * @return Response
+     * @throws VKDriverException
      */
     public function markSeen(IncomingMessage $matchingMessage)
     {
@@ -747,7 +1069,8 @@ class VkCommunityCallbackDriver extends HttpDriver
      * @param string $method
      * @param array $post_data
      * @param bool $asArray
-     * @return Response
+     * @throws VKDriverException
+     * @return Response|array
      */
     public function api($method, $post_data, $asArray = false)
     {
@@ -758,8 +1081,23 @@ class VkCommunityCallbackDriver extends HttpDriver
         ];
         $response = $this->http->post($this->config->get("endpoint").$method, [], $post_data, [], false);
 
+        //TODO: use Laravel-native value prettifying method (?)
+
+        if(!$response->isOk())
+            throw new VKDriverException("VK API said error. Response:\n".print_r($response, true));
+
+        if(json_decode($response->getContent(),true) === false)
+            throw new VKDriverException("VK API returned incorrect JSON-data. Response:\n".print_r($response, true));
+
+        $json = json_decode($response->getContent(),true);
+
+        if(isset($json["error"]))
+            throw new VKDriverException("VK API returned error when processing method '{$method}': {$json["error"]["error_msg"]}. Response:\n".print_r($response, true));
+
+
+
         if($asArray)
-            return json_decode($response->getContent(),true);
+            return $json;
 
         return $response;
     }
@@ -774,7 +1112,7 @@ class VkCommunityCallbackDriver extends HttpDriver
     public function upload($url, $filename/*, $asArray = false*/)
     {
 
-        //TODO: upload with native tools
+        //TODO: upload with Laravel-native tools (?)
         $basename = "";
         if(preg_match("/^http/i", $filename)){
             $temp_dir = sys_get_temp_dir();

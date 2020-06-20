@@ -26,7 +26,7 @@ return [
     | VK Callback Version
     |--------------------------------------------------------------------------
     |
-    | VK Callback version (5.103 and higher only!)
+    | VK Callback version (5.103 and newer only!)
     |
     */
     "version" => env("VK_API_VERSION"),
@@ -43,14 +43,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | VK Confirmation Pass-phrase
+    | VK Confirmation Pass-phrase (deprecated and no longer used by driver!)
     |--------------------------------------------------------------------------
     |
     | Used for validating the bot, is it responding or not.
     | Should be copied from the Callback API tab.
     |
+    | [FEATURE IS DEPRECATED]
+    | Leave it blank (empty string). Use $botman->on(); feature in routes/botman.php to echo confirmation pass-phrase:
+    |
+   // $botman->on("confirmation", function($payload, $bot){
+   //   echo("CONFIRMATION_TOKEN_HERE");
+   // });
+    |
     */
-    "confirm" => env("VK_CONFIRM"),
+    "confirm" => env("VK_CONFIRM", ""),
 
     /*
     |--------------------------------------------------------------------------
