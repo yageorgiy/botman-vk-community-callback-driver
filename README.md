@@ -270,7 +270,9 @@ $botman->hears("Any files\?", function ($bot) {
 
 ### Sending simple keyboard
 
-Example of sending simple keyboard (**getting keyboard event is not completed yet**). Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard). Customization of this parameters is under construction, too.
+**⚠ Attention**: major changes can affect this section as keyboard management is under construction.
+
+Example of sending simple keyboard. Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard). Customization of this parameters is under construction.
 
 ```php
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -286,10 +288,10 @@ $botman->hears("What can you do\?", function ($bot) {
         ]);
 
     $bot->ask($question, function ($answer) {
-        // Detect if button was clicked (UNDER CONSTRUCTION!):
+        // Detect if button was clicked:
         if ($answer->isInteractiveMessageReply()) {
-            $selectedValue = $answer->getValue(); // will be like 'f1', 'f2', ...
-            $selectedText = $answer->getText(); // will be like 'Function 1', 'Function 2', ...
+            $selectedValue = $answer->getValue(); // Contains button value e.g. 'f1', 'f2', ...
+            $selectedText = $answer->getText(); // Contains title e.g. 'Function 1', 'Function 2', ...
         }
     });
 });
@@ -297,9 +299,13 @@ $botman->hears("What can you do\?", function ($bot) {
 
 ![Example image](https://i.imgur.com/DBUmbE4.png)
 
-**NOTE**: better to send keyboards only in Conversation class, asking a question with buttons. See more [here](https://botman.io/2.0/conversations).
+**Note**: don't use `$answer->getText()` for validation purposes as it can be changed by the client (user). Use `$answer->getValue()` instead.
+
+**Note**: better to send keyboards only in Conversation class, asking a question with buttons. See more [here](https://botman.io/2.0/conversations).
 
 ### Customizing the keyboard
+
+**⚠ Attention:** major changes can affect this section as keyboard management is under construction.
 
 You can also change button's properties via additional parameters such as colour and position **(X and Y coords are 1-based!)**:
 
