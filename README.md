@@ -104,7 +104,7 @@ BotManFactory::create([
 
 ### Confirming the bot
 
-**⚠ Important note.** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
+**⚠ \[Important note\] Migration from v.1.4.1 and older.** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
 
 - Find the string (validation code) in section `String to be returned`:
 
@@ -114,6 +114,7 @@ BotManFactory::create([
 
 ```php
 $botman->on("confirmation", function($payload, $bot){
+    // Use $payload["group_id"] to get group ID if required for computing the passphrase.
     echo("REPLACE_ME");
 });
 ```
@@ -584,11 +585,14 @@ Example of sending message when the typing state changed:
 
 ```php
 $botman->on("message_typing_state", function($payload, $bot){
-    // $payload is an array of the event object ("Object field format")
-    // see https://vk.com/dev/groups_events for more info
+    // $payload is an array of the event object ("Object field format"),
+    // excepting Confirmation event, where $payload contains full root JSON schema.
+    // See https://vk.com/dev/groups_events for more info
     $bot->say("Hey! You're typing something!", $payload["from_id"]);
 });
 ```
+
+**Note:** `$bot->reply()` is not supported here, use `$bot->say("...", $peer_id_from_data)` instead.
 
 The result:
 
@@ -608,10 +612,10 @@ $botman->hears('sticker', function($bot) {
          "peer_id" => $bot->getUser()->getId(), // User ID
          "sticker_id" => 12, // Sticker ID
          "random_id" => rand(10000,100000) // Random ID (required by VK API, to prevent doubling messages)
-     ];
+    ];
 
     $test = $bot->sendRequest($endpoint, $arguments);
-    // $test = ["response" => 1234];
+    // $test now equals to ["response" => 1234];
 });
 ```
 

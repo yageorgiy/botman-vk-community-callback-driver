@@ -466,7 +466,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         if (!is_null($this->payload)) {
             $this->driverEvent = $this->getEventFromEventData($this->payload);
 
-            // Ignore incomming messages (used by Botman-native operations like hears(), etc.)
+            // Ignore incoming messages (used by Botman-native operations like hears(), etc.)
             switch ($this->driverEvent->getName()){
                 case "message_new":
                 case "message_edit":
@@ -495,7 +495,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         switch ($name) {
 
             case 'confirmation':
-                return new Confirmation($eventData);
+                return new Confirmation($eventData); // Storing the whole data as there is no "object" field ("type" and "group_id" only)
                 break;
 
 
