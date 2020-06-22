@@ -5,6 +5,9 @@ BotMan driver to connect VK Community with [BotMan](https://github.com/botman/bo
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Packagist](https://img.shields.io/packagist/v/yageorgiy/botman-vk-community-callback-driver.svg)](https://packagist.org/packages/yageorgiy/botman-vk-community-callback-driver)
 
+
+
+
 ## Support
 Table of driver's features:
 
@@ -37,6 +40,9 @@ Table of driver's features:
 
 \* \- uploading feature with user token is under construction
 
+
+
+
 ## Setup
 ### Getting the Community API key
 From the page of your community, go to `Manage -> Settings tab -> API usage -> Access tokens tab`. Click `Create token` button.
@@ -51,16 +57,6 @@ Copy your created token by clicking `Show` link.
 
 ![Firstly added API token](https://i.imgur.com/OHhiMHA.png)
 
-### Mounting the bot
-From the page of your community, go to `Manage -> Settings tab -> API usage -> Callback API tab`:
-
-- Choose `5.103` API version.
-- Fill the required field of URL address of your's bot mount (examples: https://example.com/botman, http://some.mysite.ru/botman).
-- Fill the Secret key field *(required for driver!)*. Later fill the `VK_SECRET_KEY` property with this value.
-- Click `Confirm` button.
-
-![Callback API tab](https://i.imgur.com/Du7jSug.png)
-
 ### Installing the driver
 Require the driver via composer:
 ```bash
@@ -74,7 +70,7 @@ VK_ACCESS_TOKEN="REPLACE_ME"                    # User or community token for se
 VK_SECRET_KEY="REPLACE_ME"                      # Secret phrase for validating the request sender (from Callback API tab, see above)
 VK_API_VERSION=5.103                            # API version to be used for sending an receiving messages (should be 5.103 and higher) (not recommended to change)
 VK_MESSAGES_ENDPOINT=https://api.vk.com/method/ # VK API endpoint (don't change it if unnecessary)
-VK_CONFIRM=                                     # DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Confirming the bot' section. Confirmation phrase for VK
+VK_CONFIRM=                                     # DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Mounting & confirming the bot' section. Confirmation phrase for VK
 VK_GROUP_ID="REPLACE_ME"                        # Community or group ID
 VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
 ```
@@ -93,7 +89,7 @@ BotManFactory::create([
         "secret" => "REPLACE_ME",                   // Secret phrase for validating the request sender (from Callback API tab, see above)
         "version" => "5.103",                       // API version to be used for sending an receiving messages (should be 5.103 and higher) (not recommended to change)
         "endpoint" => "https://api.vk.com/method/", // VK API endpoint (don't change it if unnecessary)
-        "confirm" => "",                            // DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Confirming the bot' section. Confirmation phrase for VK
+        "confirm" => "",                            // DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Mounting & confirming the bot' section. Confirmation phrase for VK
         "group_id" => "REPLACE_ME",                 // Community or group ID
         "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
     ]
@@ -102,9 +98,16 @@ BotManFactory::create([
 // ...
 ```
 
-### Confirming the bot
-
+### Mounting & confirming the bot
 **⚠ \[Important note\] Migration from v.1.4.1 and older.** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
+
+From the page of your community, go to `Manage -> Settings tab -> API usage -> Callback API tab`:
+
+- Choose `5.103` API version.
+- Fill the required field of URL address of your's bot mount (examples: https://example.com/botman, http://some.mysite.ru/botman).
+- Fill the Secret key field *(required for driver!)*:
+
+![Callback API tab](https://i.imgur.com/Du7jSug.png)
 
 - Find the string (validation code) in section `String to be returned`:
 
@@ -121,7 +124,10 @@ $botman->on("confirmation", function($payload, $bot){
 
 - Click `Confirm` button.
 
-## Usage examples
+
+
+
+## Quick guide with examples
 *In usage examples, the used file is `routes/botman.php`.*
 
 ### Sending simple message
