@@ -4,6 +4,7 @@ namespace BotMan\Drivers\VK;
 use BotMan\BotMan\Drivers\Events\GenericEvent;
 use BotMan\BotMan\Drivers\HttpDriver;
 use BotMan\BotMan\Interfaces\DriverEventInterface;
+use BotMan\BotMan\Interfaces\QuestionActionInterface;
 use BotMan\BotMan\Messages\Attachments\Audio;
 use BotMan\BotMan\Messages\Attachments\File;
 use BotMan\BotMan\Messages\Attachments\Image;
@@ -11,6 +12,7 @@ use BotMan\BotMan\Messages\Attachments\Location;
 use BotMan\BotMan\Messages\Attachments\Video;
 use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Incoming\IncomingMessage;
+use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
 use BotMan\BotMan\Users\User;
 use BotMan\Drivers\VK\Events\AppPayload;
@@ -784,91 +786,78 @@ class VkCommunityCallbackDriver extends HttpDriver {
         */
 
         /* Building attachments */
-        if(!is_string($message)){
+        if($message instanceof Question){
 
-            // Building buttons
-            // TODO: make a dedicated method
-            // TODO: make a suitable VK buttons class
-            // TODO: optimize the mess
+            // Building simple keyboard used in Question (shown "inlined" and once by default)
             if(method_exists($message,'getActions') && $message->getActions() != null){
+                /** @var QuestionActionInterface[] $actions */
                 $actions = $message->getActions();
 
-                $inline = false;
-                $max_fields = $inline ? 10 : 50;
-                $max_x = $inline ? 5 : 5;
-                $max_y = $inline ? 6 : 10;
+                $inline = false; // Force the keyboard to be non-inline
+                $one_time = true; // Force the keyboard to be shown once
 
-                $x = 0;
-                $y = 0;
-                $fields = 0;
+                $maxButtons = 1; //$inline ? 5 : 5;
+                $maxRows = $inline ? 6 : 10;
 
-                $buttons = [];
-                foreach($actions as $action){
-                    if($fields >= $max_fields) break;
+                $buttons = Collection::make($actions)
+                    // Use only BotMan\BotMan\Messages\Outgoing\Actions\Button class to send
+                    ->reject(function($button){
+                        return ($button instanceof Button);
+                    })
+                    // Use "additional" field as base, set required but unset values
+                    ->map(function($button){
+                        $item = $button["additional"];
 
-                    $break_me = false;
+                        // Set defaults of the button if unset
+                        $item["color"] = $item["color"] ?? ( (isset($button["color"]) ) ? $button["color"] : "primary" );
+                        $item["action"] = $item["action"] ?? [];
+                        $item["action"]["label"] = $item["action"]["label"] ?? $button["text"];
+                        $item["action"]["type"] = $item["action"]["type"] ?? "text";
+                        $item["action"]["payload"] = $item["action"]["payload"] ??
+                            ( (isset($button["value"])) ? json_encode(["__message" => $button["value"]]) : json_encode([]) );
 
-                    $current_x = (isset($action["additional"]["__x"])) ? $action["additional"]["__x"] : $x;
-                    $current_y = (isset($action["additional"]["__y"])) ? $action["additional"]["__y"] : $y;
+                        // Unset field of migration (used in older versions of the driver)
+                        unset($item["__x"]);
+                        unset($item["__y"]);
 
-                    if(!isset($action["additional"]["__x"])){
-                        if($x + 1 > $max_x - 1) $x = 0; else $x++;
-                    } else {
-                        unset($action["additional"]["__x"]);
-                    }
-                    if(!isset($action["additional"]["__y"])){
-                        if($x + 1 > $max_x - 1) $y++;
-                        if($y > $max_y - 1) $break_me = true;
-                    } else {
-                        unset($action["additional"]["__y"]);
-                    }
-
-
-                    $cur_btn = &$buttons[$current_y][$current_x];
-
-                    $cur_btn = $action["additional"];
-
-                    $cur_btn["color"] = $cur_btn["color"] ?? "primary";
-                    $cur_btn["action"] = $cur_btn["action"] ?? [];
-                    $cur_btn["action"]["label"] = $cur_btn["action"]["label"] ?? $action["text"];
-                    $cur_btn["action"]["type"] = $cur_btn["action"]["type"] ?? "text";
-                    $cur_btn["action"]["payload"] = $cur_btn["action"]["payload"] ??
-                        (isset($action["value"])) ? json_encode(["__message" => $action["value"]]) : json_encode([]);
-
-                    $fields++;
-
-                    if($break_me) break;
-                }
+                        return $item;
+                    })
+                    // Dividing buttons by max in a row
+                    ->chunk($maxButtons)
+                    // Rejecting extra rows to be accepted by VK
+                    ->reject(function($row, $key) use($maxRows){
+                        return $key > ($maxRows - 1);
+                    })
+                    // Serializing to array
+                    ->toArray();
 
                 $keyboard = [
+                    "one_time" => $one_time,
                     "buttons" => $buttons,
                     "inline" => $inline
                 ];
 
-                if(!$inline) $keyboard["one_time"] = true;
-
-
-
                 $data["keyboard"] = json_encode($keyboard);
             }
 
+            // Adding attachment
             if(method_exists($message,'getAttachment') && $message->getAttachment() != null){
-                $attachment = $message->getAttachment();
-
-                $data["attachment"] = $this->prepareAttachments($matchingMessage, $attachment);
+                $data["attachment"] =
+                    $this->prepareAttachments($matchingMessage, $message->getAttachment());
             }
         }
 
         if(isset($data["attachment"]) && is_array($data["attachment"]) && count($data["attachment"]) <= 0) unset($data["attachment"]);
         if(isset($data["attachment"]) && is_array($data["attachment"])) $data["attachment"] = implode(",", $data["attachment"]);
 
+
         $ret = [
-            'data' => $data
+            'data' => array_merge($data, $additionalParameters)
         ];
 
         return $ret;
     }
-
+    
     /**
      * Preparing attachments to be sent.
      *
@@ -1079,10 +1068,10 @@ class VkCommunityCallbackDriver extends HttpDriver {
             "v" => $this->config->get("version"),
             "access_token" => $this->config->get("token")
         ];
+
         $response = $this->http->post($this->config->get("endpoint").$method, [], $post_data, [], false);
 
         //TODO: use Laravel-native value prettifying method (?)
-
         if(!$response->isOk())
             throw new VKDriverException("VK API said error. Response:\n".print_r($response, true));
 

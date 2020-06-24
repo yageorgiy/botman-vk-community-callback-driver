@@ -19,10 +19,11 @@ Table of driver's features:
 |Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
 |Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
 |Sending documents (files)|✔ Supported (any of *.mp3 and executable files are restricted by the platform to be uploaded)|
-|Sending links|⚠ Partially supported (via sending a low-level API request, under construction)|
-|Sending locations|⚠ Partially supported (via sending a low-level API request, under construction)|
-|Sending stickers|⚠ Partially supported (via sending a low-level API request, under construction)|
-|Sending keyboards|⚠ Partially supported (under construction)|
+|Sending links|⚠ Partially supported (under construction)|
+|Sending locations|⚠ Partially supported (under construction)|
+|Sending stickers|⚠ Partially supported (under construction)|
+|Sending keyboards|✔ Fully supported|
+|Sending carousels|❌ Not supported yet|
 |Listening for images|✔ Supported (no titles for images provided by VK API)|
 |Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)*|
 |Listening for audio|✔ Fully supported|
@@ -99,7 +100,7 @@ BotManFactory::create([
 ```
 
 ### Mounting & confirming the bot
-**⚠ \[Important note\] Migration from v.1.4.1 and older.** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
+**⚠ \[Migrating from v.1.4.1 and older\]** Method of confirming the bot has changed since driver version 1.4.2: validation should be managed by using events listener, `VK_SECRET_KEY` (or `$botmanSettings["vk"]["confirm"]`) should be blank (empty string).
 
 From the page of your community, go to `Manage -> Settings tab -> API usage -> Callback API tab`:
 
@@ -274,11 +275,13 @@ $botman->hears("Any files\?", function ($bot) {
 
 ![Example image](https://i.imgur.com/MiFD3wm.png)
 
-### Sending simple keyboard
+### Sending keyboard
 
-**⚠ Attention**: major changes can affect this section as keyboard management is under construction.
+TODO: documentation
 
-Example of sending simple keyboard. Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard). Customization of this parameters is under construction.
+### Sending question buttons
+
+Example of sending simple keyboard via adding buttons to question. Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard), one button in a row.
 
 ```php
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
@@ -303,17 +306,19 @@ $botman->hears("What can you do\?", function ($bot) {
 });
 ```
 
+TODO: change the image
+
 ![Example image](https://i.imgur.com/DBUmbE4.png)
 
 **Note**: don't use `$answer->getText()` for validation purposes as it can be changed by the client (user). Use `$answer->getValue()` instead.
 
 **Note**: better to send keyboards only in Conversation class, asking a question with buttons. See more [here](https://botman.io/2.0/conversations).
 
-### Customizing the keyboard
+### Customizing the question buttons
 
-**⚠ Attention:** major changes can affect this section as keyboard management is under construction.
+**⚠ \[Migrating from v.1.4.x and older\]** Fields of `__x` and `__y` are now ignored by the driver. Use `VKKeyboard` serializing class to build a keyboard and add it to `$additionalParameters` of your outcoming message.
 
-You can also change button's properties via additional parameters such as colour and position **(X and Y coords are 1-based!)**:
+You can also change button's properties via additional parameters such as colour:
 
 ```php
 //...
@@ -322,18 +327,12 @@ $botman->hears("What can you do\?", function ($bot) {
         ->addButtons([
             Button::create('Function 1')->value('f1')->additionalParameters([
                 // Button features
-                "__x" => 1, // X position, won't be sent to VK (local only), 1-based!
-                "__y" => 1, // Y position, won't be sent to VK (local only), 1-based!
                 "color" => "secondary" // Colour (see available colours here - https://vk.com/dev/bots_docs_3)
             ]),
             Button::create('Function 2')->value('f2')->additionalParameters([
-                "__x" => 1,
-                "__y" => 2,
                 "color" => "negative"
             ]),
             Button::create('Function 3')->value('f2')->additionalParameters([
-                "__x" => 1,
-                "__y" => 3,
                 "color" => "primary"
             ])
         ]);
@@ -343,6 +342,8 @@ $botman->hears("What can you do\?", function ($bot) {
     });
 });
 ```
+
+TODO: change the image
 
 ![Example image](https://i.imgur.com/wcTWALB.png)
 
