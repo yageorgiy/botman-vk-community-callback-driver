@@ -275,25 +275,41 @@ $botman->hears("Any files\?", function ($bot) {
 
 ![Example image](https://i.imgur.com/MiFD3wm.png)
 
-### Sending keyboard
+### Additional parameters
 
-TODO: documentation
+Additional parameters are used to append or replace message request parameters.
 
-### Sending question buttons
+**Note:** `v` and `access_token` fields are ignored to be replaced. Change their parameters in `.env` file or in configuration array.
 
-Example of sending simple keyboard via adding buttons to question. Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard), one button in a row.
+Example of replacing message text:
+
+```php
+$botman->hears('Show me the replaced message', function($bot) {
+    $bot->reply("This string will be ignored", [
+        "message" => "This message string will be sent"
+    ]);
+});
+```
+
+![The result](https://i.imgur.com/RypHjvS.png)
+
+See [messages.send method](https://vk.com/dev/messages.send) for more info.
+
+### Sending question buttons (simple keyboard)
+
+Example of sending simple keyboard via adding buttons to question. Keyboard will be shown as **`one_time = true`** (shown once) and **`inline = false`** (default non-inline keyboard), one button in a row. See `Sending full-supported keyboard` section for in-depth setup.
 
 ```php
 use BotMan\BotMan\Messages\Outgoing\Actions\Button;
 use BotMan\BotMan\Messages\Outgoing\Question;
-$botman->hears("What can you do\?", function ($bot) {
-    $question = Question::create('Ha-ha! Lots of!')
+$botman->hears("List of functions\?", function ($bot) {
+    $question = Question::create('My list of functions:')
         ->addButtons([
             Button::create('Function 1')->value('f1'),
             Button::create('Function 2')->value('f2'),
-            Button::create('Function 3')->value('f2'),
-            Button::create('Function 4')->value('f2'),
-            Button::create('Function 5')->value('f3')
+            Button::create('Function 3')->value('f3'),
+            Button::create('Function 4')->value('f4'),
+            Button::create('Function 5')->value('f5')
         ]);
 
     $bot->ask($question, function ($answer) {
@@ -306,15 +322,13 @@ $botman->hears("What can you do\?", function ($bot) {
 });
 ```
 
-TODO: change the image
-
-![Example image](https://i.imgur.com/DBUmbE4.png)
+![Example image](https://i.imgur.com/aaphCOL.png)
 
 **Note**: don't use `$answer->getText()` for validation purposes as it can be changed by the client (user). Use `$answer->getValue()` instead.
 
 **Note**: better to send keyboards only in Conversation class, asking a question with buttons. See more [here](https://botman.io/2.0/conversations).
 
-### Customizing the question buttons
+### Customizing the question buttons (simple keyboard)
 
 **⚠ \[Migrating from v.1.4.x and older\]** Fields of `__x` and `__y` are now ignored by the driver. Use `VKKeyboard` serializing class to build a keyboard and add it to `$additionalParameters` of your outcoming message.
 
@@ -322,17 +336,22 @@ You can also change button's properties via additional parameters such as colour
 
 ```php
 //...
-$botman->hears("What can you do\?", function ($bot) {
-    $question = Question::create('Ha-ha! Lots of!')
+$botman->hears("List of functions\?", function ($bot) {
+    $question = Question::create('My list of functions:')
         ->addButtons([
             Button::create('Function 1')->value('f1')->additionalParameters([
-                // Button features
                 "color" => "secondary" // Colour (see available colours here - https://vk.com/dev/bots_docs_3)
             ]),
             Button::create('Function 2')->value('f2')->additionalParameters([
                 "color" => "negative"
             ]),
-            Button::create('Function 3')->value('f2')->additionalParameters([
+            Button::create('Function 3')->value('f3')->additionalParameters([
+                "color" => "primary"
+            ]),
+            Button::create('Function 4')->value('f4')->additionalParameters([
+                "color" => "primary"
+            ]),
+            Button::create('Function 5')->value('f5')->additionalParameters([
                 "color" => "primary"
             ])
         ]);
@@ -343,11 +362,77 @@ $botman->hears("What can you do\?", function ($bot) {
 });
 ```
 
-TODO: change the image
-
-![Example image](https://i.imgur.com/wcTWALB.png)
+![Example image](https://i.imgur.com/vkuVqnj.png)
 
 See [VK documentation page](https://vk.com/dev/bots_docs_3) for available colours, types and other features. Just add new fields in array of additional parameters as it is shown in the example above.
+
+
+### Sending native keyboard
+
+Native keyboard can be send as an additional parameter **(works only for VK!)**:
+
+```php
+use BotMan\Drivers\VK\Extensions\VKKeyboard;
+use BotMan\Drivers\VK\Extensions\VKKeyboardButton;
+use BotMan\Drivers\VK\Extensions\VKKeyboardRow;
+$botman->hears('keyboard', function(BotMan $bot) {
+    $keyboard = new VKKeyboard();
+    $keyboard->setInline(false);    // Setting the inline mode ("inline" parameter)
+    $keyboard->setOneTime(false);   // Setting "one_time" parameter
+    
+    $keyboard->addRows(
+        // Top row
+        new VKKeyboardRow([
+            // Text example
+            ( new VKKeyboardButton() )->setColor("primary")->setText("Sample text")->setValue("button1"),
+            // UTF-8 text example
+            ( new VKKeyboardButton() )->setColor("primary")->setText("Текст для примера")->setValue("button2"),
+        ]),
+        // Middle row
+        new VKKeyboardRow([
+            // Long text trim example
+            ( new VKKeyboardButton() )
+                // Colour (see available colours here - https://vk.com/dev/bots_docs_3)                
+                ->setColor("default")
+                
+                // Long text will be trimed with ellipsis at the end of the label
+                ->setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam nec ultrices purus, ut sollicitudin arcu.")
+
+                // Set button value
+                ->setValue("button3"), 
+        ]),
+        // Bottom row
+        new VKKeyboardRow([
+            // Emoji example
+            ( new VKKeyboardButton() )->setColor("negative")->setText("⛔")->setValue("button4"),
+            ( new VKKeyboardButton() )->setColor("primary")->setText("⚠")->setValue("button5"),
+            ( new VKKeyboardButton() )->setColor("positive")->setText("✅")->setValue("button6"),
+        ])
+    );
+
+    $bot->reply("Native keyboard:", [
+        "keyboard" => $keyboard->toJSON()
+    ]);
+});
+```
+
+![Example image](https://i.imgur.com/dqLhQG1.png)
+
+You can also send a Question with additional parameters with keyboard:
+
+```php
+// ...
+$bot->ask($question, function ($answer) {
+    // Detect if button was clicked:
+    if ($answer->isInteractiveMessageReply()) {
+        $selectedValue = $answer->getValue(); // Contains button value e.g. 'f1', 'f2', ...
+        $selectedText = $answer->getText(); // Contains title e.g. 'Function 1', 'Function 2', ...
+    }
+}, [
+    "keyboard" => $keyboard->toJSON()
+]);
+// ...
+```
 
 ### Listening for images
 
@@ -613,7 +698,7 @@ The result:
 
 ### Sending low-level API requests
 
-Example of sending a sticker:
+Example of sending a sticker via `$bot->sendRequest()`:
 
 ```php
 $botman->hears('sticker', function($bot) {
