@@ -465,7 +465,12 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @return DriverEventInterface|bool
      */
     public function hasMatchingEvent() {
-        if (!is_null($this->payload)) {
+
+        // Check if VK request
+        $check =    $this->payload->get("secret") == $this->config->get("secret") &&
+                    $this->payload->get("group_id") == $this->config->get("group_id");
+
+        if (!is_null($this->payload) && $check) {
             $this->driverEvent = $this->getEventFromEventData($this->payload);
 
             // Ignore incoming messages (used by Botman-native operations like hears(), etc.)
