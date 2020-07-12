@@ -71,7 +71,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class VkCommunityCallbackDriver extends HttpDriver {
-    const DRIVER_NAME = "VK Community Callback Driver";
+    const DRIVER_NAME = "VkCommunityCallback";
 
     /**
      * Array of messages
