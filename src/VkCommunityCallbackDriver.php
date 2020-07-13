@@ -844,12 +844,12 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
                 $data["keyboard"] = json_encode($keyboard);
             }
+        }
 
-            // Adding attachment
-            if(method_exists($message,'getAttachment') && $message->getAttachment() != null){
-                $data["attachment"] =
-                    $this->prepareAttachments($matchingMessage, $message->getAttachment());
-            }
+        // Adding attachment (both for Question and OutcomingMessage)
+        if(method_exists($message,'getAttachment') && $message->getAttachment() != null){
+            $data["attachment"] =
+                $this->prepareAttachments($matchingMessage, $message->getAttachment());
         }
 
         if(isset($data["attachment"]) && is_array($data["attachment"]) && count($data["attachment"]) <= 0) unset($data["attachment"]);
