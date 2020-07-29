@@ -32,7 +32,7 @@ Table of driver's features:
 |Listening for voice messages|❌ Not supported yet|
 |Receiving messages with mixed attachments|✔ Fully supported|
 |Typing status|✔ Fully supported|
-|Mark seen|✔ Fully supported|
+|Mark seen|⚠ Partially supported (user-created conversations can't be marked via API)|
 |Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
 |Usage in VK conversations|⚠ Partially supported (under construction)|
 |Multiple communities handling|❌ Not supported yet|
