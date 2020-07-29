@@ -468,7 +468,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         // Check if VK request
         $check =    $this->payload->get("secret") == $this->config->get("secret") &&
-                    $this->payload->get("group_id") == $this->config->get("group_id");
+            $this->payload->get("group_id") == $this->config->get("group_id");
 
         if (!is_null($this->payload) && $check) {
             $this->driverEvent = $this->getEventFromEventData($this->payload);
@@ -862,7 +862,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         return $ret;
     }
-    
+
     /**
      * Preparing attachments to be sent.
      *
@@ -1050,8 +1050,18 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     public function markSeen(IncomingMessage $matchingMessage)
     {
+        if($this->isConversation()){
+            // Worked only with conversations created by the community
+            return $this->api("messages.markAsRead", [
+                "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
+                "mark_conversation_as_read" => 1,
+                "peer_id" => $matchingMessage->getSender()
+            ]);
+        }
+
+        // message_ids is deprecated
         return $this->api("messages.markAsRead", [
-            "message_ids" => $matchingMessage->getPayload()->get("id"),
+            "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
             "peer_id" => $matchingMessage->getSender()
         ]);
     }
@@ -1087,8 +1097,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         if(isset($json["error"]))
             throw new VKDriverException("VK API returned error when processing method '{$method}': {$json["error"]["error_msg"]}. Response:\n".print_r($response, true));
-
-
 
         if($asArray)
             return $json;
