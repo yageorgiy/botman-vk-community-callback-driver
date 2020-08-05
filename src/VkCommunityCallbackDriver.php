@@ -233,6 +233,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         if (empty($this->messages)) {
             $message = "generic";
             $peer_id = 0;
+            $from_id = 0;
             $message_object = [];
 
             // message_new and message_reply / message_edit has different JSON schemas!
@@ -244,6 +245,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $message_object = $this->payload->get("object")["message"];
                     $message = $this->payload->get("object")["message"]["text"];
                     $peer_id = $this->payload->get("object")["message"]["peer_id"];
+                    $from_id = $this->payload->get("object")["message"]["from_id"];
                     break;
 
                 case "message_reply":
@@ -251,6 +253,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $message_object = $this->payload->get("object");
                     $message = $this->payload->get("object")["text"];
                     $peer_id = $this->payload->get("object")["peer_id"];
+                    $from_id = $this->payload->get("object")["from_id"];
                     break;
 
                 default:
@@ -267,7 +270,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     if(isset($payload_text) && $payload_text != null) $message = $payload_text;
                 }
 
-                $incomingMessage = $this->serializeIncomingMessage($message, $peer_id, $peer_id, $message_object);
+                $incomingMessage = $this->serializeIncomingMessage($message, $from_id, $peer_id, $message_object);
                 $incomingMessage->addExtras("message_object", $message_object);
 
                 // Client information (only for new messages)
@@ -1055,14 +1058,14 @@ class VkCommunityCallbackDriver extends HttpDriver {
             return $this->api("messages.markAsRead", [
                 "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
                 "mark_conversation_as_read" => 1,
-                "peer_id" => $matchingMessage->getSender()
+                "peer_id" => $matchingMessage->getRecipient()
             ]);
         }
 
         // message_ids is deprecated
         return $this->api("messages.markAsRead", [
             "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
-            "peer_id" => $matchingMessage->getSender()
+            "peer_id" => $matchingMessage->getRecipient()
         ]);
     }
 
