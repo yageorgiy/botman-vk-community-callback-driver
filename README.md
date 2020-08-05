@@ -6,7 +6,11 @@ BotMan driver to connect VK Community with [BotMan](https://github.com/botman/bo
 [![Packagist](https://img.shields.io/packagist/v/yageorgiy/botman-vk-community-callback-driver.svg)](https://packagist.org/packages/yageorgiy/botman-vk-community-callback-driver)
 
 
+## Contributing
 
+[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/0)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/0)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/1)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/1)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/2)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/2)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/3)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/3)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/4)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/4)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/5)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/5)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/6)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/6)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/7)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/7)
+
+Contributions are welcome, I would be glad to accept contributions via Pull Requests. 🙂 See `Contributors` tab for more details.
 
 ## Support
 Table of driver's features:
@@ -724,9 +728,6 @@ The result:
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
 - [BotMan documentation](https://botman.io/2.0/welcome)
-
-## Contributing
-Contributions are welcome, I would be glad to accept contributions via Pull Requests. Of course, everyone will be mentioned in the contributors list. 🙂
 
 ## License
 VK Community Callback driver is made under the terms of MIT license. BotMan is free software distributed under the terms of the MIT license.

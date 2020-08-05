@@ -936,6 +936,14 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
                 // Send audio as voice message
                 if(is_bool($attachment->getExtras("vk_as_voice")) && $attachment->getExtras("vk_as_voice") == true){
+
+                    // Show "*bot* is recording audiomessage" caption
+                    $this->api("messages.setActivity", [
+                        "peer_id" => $matchingMessage->getRecipient(),
+                        "type" => "audiomessage"
+                    ], true);
+
+
                     $getUpload = $this->api("docs.getMessagesUploadServer", [
                         'peer_id' => $peer_id,
                         'type' => "audio_message"
