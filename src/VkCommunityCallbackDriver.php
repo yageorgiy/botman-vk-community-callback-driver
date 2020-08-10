@@ -736,7 +736,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         ], true);
 
         $first_name = $response["response"][0]["first_name"];
-        $last_name = $response["response"][0]["first_name"];
+        $last_name = $response["response"][0]["last_name"];
         $username = "id".$response["response"][0]["id"];
 
 
