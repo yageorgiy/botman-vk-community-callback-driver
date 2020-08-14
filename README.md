@@ -80,7 +80,7 @@ VK_API_VERSION=5.103                            # API version to be used for sen
 VK_MESSAGES_ENDPOINT=https://api.vk.com/method/ # VK API endpoint (don't change it if unnecessary)
 VK_CONFIRM=                                     # DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Mounting & confirming the bot' section. Confirmation phrase for VK
 VK_GROUP_ID="REPLACE_ME"                        # Community or group ID
-VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
+VK_USER_FIELDS=                                 # Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields) (note: screen_name is already included!)
 ```
 
 If you don't use BotMan Studio, the driver should be applied manually:
@@ -99,7 +99,7 @@ BotManFactory::create([
         "endpoint" => "https://api.vk.com/method/", // VK API endpoint (don't change it if unnecessary)
         "confirm" => "",                            // DEPRECATED SINCE v.1.4.2, LEAVE BLANK (EMPTY STRING) - see 'Mounting & confirming the bot' section. Confirmation phrase for VK
         "group_id" => "REPLACE_ME",                 // Community or group ID
-        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields)
+        "user_fields" => ""                         // Extra user fields (see https://vk.com/dev/fields for custom fields) (leave blank for no extra fields) (note: screen_name is already included!)
     ]
 ]);
 
@@ -609,6 +609,8 @@ $botman->hears('I have both image and video for you.', function ($bot) {
 ### Retrieving extra user data
 
 Extra user fields should be defined in `.env` file and can be accessed via `getUser()->getInfo()` method.
+
+**⚠ \[Migrating from v.1.5.x and older\]** screen_name is now used by the driver too. Remove `screen_name` value from `user_fields` parameter to prevent sending `screen_name` twice. Use `$bot->getUser()->getUsername()` to get username.
 
 Example contents of `.env`:
 

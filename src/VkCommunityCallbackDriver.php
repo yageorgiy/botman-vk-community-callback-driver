@@ -190,7 +190,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @deprecated deprecated since 1.4.2
      */
     public function echoConfirmationToken() {
-        //TODO: save output?
         echo($this->config->get("confirm"));
     }
 
@@ -701,20 +700,25 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @param IncomingMessage $matchingMessage
      * @return User
      * @throws VKDriverException
+     * @throws VKDriverDeprecatedFeature
      */
     public function getUser(IncomingMessage $matchingMessage)
     {
         // Retrieving all relevant information about user
         $fields = $this->config->get("user_fields", "");
 
+        // Exception for migration from 1.5.x
+        if(mb_strpos($fields, "screen_name") !== false)
+            throw new VKDriverDeprecatedFeature('screen_name is already be sent by the driver. Please, remove the screen_name from VK_USER_FIELDS (or $botmanSettings["vk"]["user_fields"]) and use $bot->getUser()->getUsername() instead.');
+
         $response = $this->api("users.get", [
             "user_ids" => $matchingMessage->getExtras("message_object")["from_id"],
-            "fields" => $fields
+            "fields" => ($fields == "") ? "screen_name" : "screen_name," . $fields
         ], true);
 
         $first_name = $response["response"][0]["first_name"];
         $last_name = $response["response"][0]["last_name"];
-        $username = "id".$response["response"][0]["id"];
+        $username = $response["response"][0]["screen_name"];
 
 
         // TODO: remade with proper user class suitable for VK user
