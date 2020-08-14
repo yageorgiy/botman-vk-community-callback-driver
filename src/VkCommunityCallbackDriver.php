@@ -231,38 +231,10 @@ class VkCommunityCallbackDriver extends HttpDriver {
             $this->reply(); // Reply 'ok' for all events (except confirmation)
 
         if (empty($this->messages)) {
-            $message = "generic";
-            $peer_id = 0;
-            $from_id = 0;
-            $message_object = [];
+            $message_object = $this->extractPrivateMessageFromPayload($this->payload);
 
-            // message_new and message_reply / message_edit has different JSON schemas!
-
-            $message_event = true;
-
-            switch($this->payload->get("type")){
-                case "message_new":
-                    $message_object = $this->payload->get("object")["message"];
-                    $message = $this->payload->get("object")["message"]["text"];
-                    $peer_id = $this->payload->get("object")["message"]["peer_id"];
-                    $from_id = $this->payload->get("object")["message"]["from_id"];
-                    break;
-
-                case "message_reply":
-                case "message_edit":
-                    $message_object = $this->payload->get("object");
-                    $message = $this->payload->get("object")["text"];
-                    $peer_id = $this->payload->get("object")["peer_id"];
-                    $from_id = $this->payload->get("object")["from_id"];
-                    break;
-
-                default:
-                    $message_event = false;
-                    break;
-            }
-
-            if($message_event){
-                $this->peer_id = $peer_id;
+            if($message_object !== false){
+                $this->peer_id = $message_object['peer_id'];
 
                 // Replacing button's value from payload to message text
                 if(isset($message_object["payload"])){
@@ -270,7 +242,8 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     if(isset($payload_text) && $payload_text != null) $message = $payload_text;
                 }
 
-                $incomingMessage = $this->serializeIncomingMessage($message, $from_id, $peer_id, $message_object);
+                $incomingMessage = $this->serializeIncomingMessage($message_object['text'], $message_object['from_id'],
+                    $message_object['peer_id'], $message_object);
                 $incomingMessage->addExtras("message_object", $message_object);
 
                 // Client information (only for new messages)
@@ -1061,10 +1034,16 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     public function markSeen(IncomingMessage $matchingMessage)
     {
+        $messageObject = $this->extractPrivateMessageFromPayload($matchingMessage->getPayload());
+        if ($messageObject === false) {
+            throw new VKDriverException('Cannot extract message from events of type ' . $matchingMessage->getPayload()->get['type']);
+        }
+        $messageId = $messageObject['id'];
+
         if($this->isConversation()){
             // Worked only with conversations created by the community
             return $this->api("messages.markAsRead", [
-                "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
+                "start_message_id" => $messageId,
                 "mark_conversation_as_read" => 1,
                 "peer_id" => $matchingMessage->getRecipient()
             ]);
@@ -1072,7 +1051,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         // message_ids is deprecated
         return $this->api("messages.markAsRead", [
-            "start_message_id" => $matchingMessage->getPayload()->get("object")['message']['id'],
+            "start_message_id" => $messageId,
             "peer_id" => $matchingMessage->getRecipient()
         ]);
     }
@@ -1160,6 +1139,27 @@ class VkCommunityCallbackDriver extends HttpDriver {
     public function isConversation()
     {
         return $this->peer_id >= 2000000000;
+    }
+
+    /**
+     * Retrieves a private message from payload.
+     *
+     * @param ParameterBag $payload
+     * @return false|array Private message (https://vk.com/dev/objects/message) as array or false
+     */
+    private function extractPrivateMessageFromPayload(ParameterBag $payload)
+    {
+        switch ($payload->get("type")) {
+            case "message_new":
+                return $this->payload->get("object")["message"];
+
+            case "message_reply":
+            case "message_edit":
+                return $this->payload->get("object");
+
+            default:
+                return false;
+        }
     }
 
 }
