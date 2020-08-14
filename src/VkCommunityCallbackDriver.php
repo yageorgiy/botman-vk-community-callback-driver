@@ -38,6 +38,7 @@ use BotMan\Drivers\VK\Events\MarketOrderNew;
 use BotMan\Drivers\VK\Events\MessageAllow;
 use BotMan\Drivers\VK\Events\MessageDeny;
 use BotMan\Drivers\VK\Events\MessageEdit;
+use BotMan\Drivers\VK\Events\MessageEvent;
 use BotMan\Drivers\VK\Events\MessageNew;
 use BotMan\Drivers\VK\Events\MessageReply;
 use BotMan\Drivers\VK\Events\MessageTypingState;
@@ -237,13 +238,13 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 $this->peer_id = $message_object['peer_id'];
 
                 // Replacing button's value from payload to message text
+                $message = $message_object['text'];
                 if(isset($message_object["payload"])){
                     $payload_text = json_decode($message_object["payload"], true)["__message"];
                     if(isset($payload_text) && $payload_text != null) $message = $payload_text;
                 }
 
-                $incomingMessage = $this->serializeIncomingMessage($message_object['text'], $message_object['from_id'],
-                    $message_object['peer_id'], $message_object);
+                $incomingMessage = $this->serializeIncomingMessage($message, $message_object['from_id'], $message_object['peer_id'], $message_object);
                 $incomingMessage->addExtras("message_object", $message_object);
 
                 // Client information (only for new messages)
@@ -469,7 +470,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * Generating event from payload
      *
      * @param Collection|ParameterBag $eventData
-     * @return array|GenericEvent|AppPayload|AudioNew|BoardPostDelete|BoardPostEdit|BoardPostNew|BoardPostRestore|Confirmation|GroupChangePhoto|GroupChangeSettings|GroupJoin|GroupLeave|GroupOfficersEdit|LikeAdd|LikeRemove|MarketCommentDelete|MarketCommentEdit|MarketCommentNew|MarketCommentRestore|MarketOrderNew|MessageAllow|MessageDeny|MessageEdit|MessageNew|MessageReply|MessageTypingState|PhotoCommentDelete|PhotoCommentEdit|PhotoCommentNew|PhotoCommentRestore|PhotoNew|PollVoteNew|UserBlock|UserUnblock|VideoCommentDelete|VideoCommentEdit|VideoCommentNew|VideoCommentRestore|VideoNew|VKPayTransaction|WallPostNew|WallReplyDelete|WallReplyEdit|WallReplyNew|WallReplyRestore|WallRepost|MarketOrderEdit
+     * @return array|GenericEvent|AppPayload|AudioNew|BoardPostDelete|BoardPostEdit|BoardPostNew|BoardPostRestore|Confirmation|GroupChangePhoto|GroupChangeSettings|GroupJoin|GroupLeave|GroupOfficersEdit|LikeAdd|LikeRemove|MarketCommentDelete|MarketCommentEdit|MarketCommentNew|MarketCommentRestore|MarketOrderEdit|MarketOrderNew|MessageAllow|MessageDeny|MessageEdit|MessageEvent|MessageNew|MessageReply|MessageTypingState|PhotoCommentDelete|PhotoCommentEdit|PhotoCommentNew|PhotoCommentRestore|PhotoNew|PollVoteNew|UserBlock|UserUnblock|VideoCommentDelete|VideoCommentEdit|VideoCommentNew|VideoCommentRestore|VideoNew|VKPayTransaction|WallPostNew|WallReplyDelete|WallReplyEdit|WallReplyNew|WallReplyRestore|WallRepost
      */
     protected function getEventFromEventData($eventData)
     {
@@ -483,7 +484,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
 
             // All events of russian docs of https://vk.com/dev/groups_events (english docs are deprecated?)
-            // incl. message_typing_state which is missing in official VK docs for some reason
 
             case 'message_new':
                 return new MessageNew($event);
@@ -495,6 +495,10 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
             case 'message_reply':
                 return new MessageReply($event);
+                break;
+
+            case 'message_event':
+                return new MessageEvent($event);
                 break;
 
             case 'message_allow':
@@ -824,8 +828,15 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         // Adding attachment (both for Question and OutcomingMessage)
         if(method_exists($message,'getAttachment') && $message->getAttachment() != null){
-            $data["attachment"] =
-                $this->prepareAttachments($matchingMessage, $message->getAttachment());
+            $attachment = $message->getAttachment();
+
+            // Preparing location here as it isn't an attachment (according to VK docs)
+            if($attachment instanceof Location){
+                /** @var Location $lat */
+                $data["lat"] = $attachment->getLatitude();
+                $data["long"] = $attachment->getLongitude();
+            } else
+                $data["attachment"] = $this->prepareAttachments($matchingMessage, $attachment);
         }
 
         if(isset($data["attachment"]) && is_array($data["attachment"]) && count($data["attachment"]) <= 0) unset($data["attachment"]);
@@ -863,7 +874,10 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 }
 
                 // Otherwise, upload image to VK
-                // TODO: throw exceptions if error
+
+                // Send typing status while uploading
+                $this->types($matchingMessage);
+
                 $getUploadUrl = $this->api("photos.getMessagesUploadServer", [
                     'peer_id' => $peer_id
                 ], true);
@@ -950,6 +964,9 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $ret[] = $attachment->getExtras("vk_doc");
                     break;
                 }
+
+                // Send typing status while uploading
+                $this->types($matchingMessage);
 
                 $getUpload = $this->api("docs.getMessagesUploadServer", [
                     'peer_id' => $peer_id,
@@ -1144,10 +1161,10 @@ class VkCommunityCallbackDriver extends HttpDriver {
     /**
      * Retrieves a private message from payload.
      *
-     * @param ParameterBag $payload
+     * @param Collection|ParameterBag $payload
      * @return false|array Private message (https://vk.com/dev/objects/message) as array or false
      */
-    private function extractPrivateMessageFromPayload(ParameterBag $payload)
+    private function extractPrivateMessageFromPayload($payload)
     {
         switch ($payload->get("type")) {
             case "message_new":

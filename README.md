@@ -23,11 +23,14 @@ Table of driver's features:
 |Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
 |Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
 |Sending documents (files)|✔ Supported (any of *.mp3 and executable files are restricted by the platform to be uploaded)|
-|Sending links|⚠ Partially supported (under construction)|
-|Sending locations|⚠ Partially supported (under construction)|
-|Sending stickers|⚠ Partially supported (under construction)|
+|Sending links|✔ Supported|
+|Sending locations|✔ Fully supported|
+|Sending stickers|✔ Supported (as additional parameter)|
+|Sending wall posts|⚠ Partially supported (as additional parameter only)|
+|Sending polls|⚠ Partially supported (as additional parameter only)|
+|Sending market items|⚠ Partially supported (as additional parameter only)|
 |Sending keyboards|✔ Fully supported|
-|Sending carousels|❌ Not supported yet|
+|Sending carousels|⚠ Partially supported (as additional parameter only)|
 |Listening for images|✔ Supported (no titles for images provided by VK API)|
 |Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)*|
 |Listening for audio|✔ Fully supported|
@@ -35,13 +38,13 @@ Table of driver's features:
 |Listening for locations|✔ Fully supported|
 |Listening for voice messages|❌ Not supported yet|
 |Receiving messages with mixed attachments|✔ Fully supported|
-|Typing status|✔ Fully supported|
+|Typing status|✔ Fully supported (photo or document upload, user call)|
 |Mark seen|⚠ Partially supported (user-created conversations can't be marked via API)|
 |Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
-|Usage in VK conversations|⚠ Partially supported (under construction)|
+|Usage in VK conversations|✔ Supported|
 |Multiple communities handling|❌ Not supported yet|
 |VK API low-level management|✔ Fully supported|
-|Events listener|✔ Fully supported (as for 20.06.2020)|
+|Events listener|✔ Fully supported (as for 14.08.2020)|
 
 \* \- uploading feature with user token is under construction
 
@@ -166,6 +169,9 @@ After all, it will answer:
 If bot receives `Gimme some image` message, it will answer `Here it is!` with an attached image:
 
 ```php
+use BotMan\BotMan\Messages\Attachments\Image;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
 $botman->hears('Gimme some image', function ($bot) {
     // Create attachment
     $attachment = new Image('https://botman.io/img/logo.png');
@@ -189,6 +195,9 @@ Example of sending an already uploaded video:
 **Note**: uploading videos to VK is not supported by the driver yet.
 
 ```php
+use BotMan\BotMan\Messages\Attachments\Video;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
 $botman->hears('Gimme some video', function ($bot) {
     // Create attachment
     $attachment = new Video('http://unused-video-url');
@@ -213,6 +222,9 @@ Example of sending an already uploaded audio:
 **Note**: uploading audio to VK is restricted by the platform.
 
 ```php
+use BotMan\BotMan\Messages\Attachments\Audio;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
 $botman->hears('Gimme some audio', function ($bot) {
     // Create attachment
                             // URL can be uploaded ONLY as voice message (due to restrictions of VK)
@@ -237,6 +249,9 @@ Example of sending a voice message with message text:
 **Note**: better to upload an *.ogg file rather than *.mp3, *.wav and others. See [Uploading Voice Message](https://vk.com/dev/upload_files_3) for more info.
 
 ```php
+use BotMan\BotMan\Messages\Attachments\Audio;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
 $botman->hears('Sing me a song', function ($bot) {
     // Create attachment
                             // URL can be uploaded ONLY as voice message (due to restrictions of VK)
@@ -262,6 +277,9 @@ Example of sending file:
 **Note**: not all files are available to upload. See [Uploading documents](https://vk.com/dev/upload_files_2?f=10.%2BUploading%2BDocuments) for more info.
 
 ```php
+use BotMan\BotMan\Messages\Attachments\File;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
 $botman->hears("Any files\?", function ($bot) {
     $attachment = new File('https://url-to-file');
 //  $attachment->addExtras("vk_doc", "doc123456_123456"); // Send an already uploaded document (driver will ignore audio url and vk_doc_title, vk_doc_tags parameters)
@@ -278,6 +296,29 @@ $botman->hears("Any files\?", function ($bot) {
 ```
 
 ![Example image](https://i.imgur.com/MiFD3wm.png)
+
+### Attaching location
+
+Example of sending location (taken from BotMan docs):
+
+```php
+use BotMan\BotMan\Messages\Attachments\Location;
+use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
+
+$botman->hears('send location', function($bot) {
+    // Create attachment
+    $attachment = new Location(61.766130, -6.822510, [
+        'custom_payload' => true,
+    ]);
+
+    // Build message object
+    $message = OutgoingMessage::create('This is my text')
+        ->withAttachment($attachment);
+
+    // Reply message object
+    $bot->reply($message);
+});
+```
 
 ### Additional parameters
 
@@ -379,6 +420,7 @@ Native keyboard can be send as an additional parameter **(works only for VK!)**:
 use BotMan\Drivers\VK\Extensions\VKKeyboard;
 use BotMan\Drivers\VK\Extensions\VKKeyboardButton;
 use BotMan\Drivers\VK\Extensions\VKKeyboardRow;
+
 $botman->hears('keyboard', function(BotMan $bot) {
     $keyboard = new VKKeyboard();
     $keyboard->setInline(false);    // Setting the inline mode ("inline" parameter)
@@ -634,7 +676,8 @@ List of supported events:
 - `confirmation`
 - `message_allow`
 - `message_deny`
-- `message_typing_state`        **
+- `message_typing_state`        *
+- `message_event`               *
 - `photo_new`
 - `photo_comment_new`
 - `photo_comment_edit`
@@ -675,9 +718,9 @@ List of supported events:
 - `like_add`                    *
 - `like_remove`                 *
 
-\* - missing english version in VK docs, but feature exists (as for 20.06.2020)
+\* - missing english version in VK docs, but feature exists (as for 14.08.2020)
 
-\*\* - missing in VK docs, but feature exists (as for 20.06.2020)
+\*\* - missing in VK docs, but feature exists (as for 14.08.2020)
 
 **Note:** events of `message_new`, `message_reply`, `message_edit` are assessable via Hearing Messages functions (e.g. `$botman->hear()`).
 
@@ -703,6 +746,8 @@ The result:
 ### Sending low-level API requests
 
 Example of sending a sticker via `$bot->sendRequest()`:
+
+**Note:** it is also possible to send stickers via additional parameters.
 
 ```php
 $botman->hears('sticker', function($bot) {
