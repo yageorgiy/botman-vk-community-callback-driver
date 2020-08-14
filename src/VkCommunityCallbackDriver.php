@@ -137,7 +137,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     protected function reply() {
         if(!$this->reply){
-            ob_end_clean();
+            if(ob_get_contents() || ob_get_length()) ob_end_clean();
             header("Connection: close");
             ignore_user_abort(true);
             ob_start();
