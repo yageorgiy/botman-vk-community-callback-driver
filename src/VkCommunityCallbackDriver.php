@@ -1124,18 +1124,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     public function upload($url, $filename/*, $asArray = false*/)
     {
-
-        //TODO: upload with Laravel-native tools (?)
-        $basename = "";
-        if(preg_match("/^http/i", $filename)){
-            $temp_dir = sys_get_temp_dir();
-
-            $basename = tempnam($temp_dir, "botman_vk_driver_api_");
-            $contents = fopen($filename, 'r');
-            file_put_contents($basename, $contents);
-            fclose($contents);
-        }
-
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -1144,10 +1132,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
         curl_close($curl);
 
         //TODO: check for exceptions
-
-        if(preg_match("/^http/i", $filename)) {
-            if(file_exists($basename)) unlink($basename);
-        }
 
         return json_decode($json, true);
     }
