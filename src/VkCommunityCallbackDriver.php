@@ -239,8 +239,15 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 // Replacing button's value from payload to message text
                 $message = $message_object['text'];
                 if(isset($message_object["payload"])){
-                    $payload_text = json_decode($message_object["payload"], true)["__message"];
-                    if(isset($payload_text) && $payload_text != null) $message = $payload_text;
+                    $payload = json_decode($message_object["payload"], true);
+
+                    // Start command (VK-defined button value)
+                    if(isset($payload["command"]) && $payload["command"] == "start")
+                        $message = $payload["command"];
+
+                    // Driver-defined button value
+                    if(isset($payload["__message"]) && $payload["__message"] != null)
+                        $message = $payload["__message"];
                 }
 
                 $incomingMessage = $this->serializeIncomingMessage($message, $message_object['from_id'], $message_object['peer_id'], $message_object);
