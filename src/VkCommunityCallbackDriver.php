@@ -74,6 +74,9 @@ use Symfony\Component\HttpFoundation\Response;
 class VkCommunityCallbackDriver extends HttpDriver {
     const DRIVER_NAME = "VkCommunityCallback";
 
+    const ACTIVITY_AUDIO_MESSAGE = "audiomessage";
+    const ACTIVITY_TYPING = "typing";
+
     /**
      * Array of messages
      *
@@ -766,7 +769,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
     public function buildServicePayload($message, $matchingMessage, $additionalParameters = [])
     {
         $text = $message->getText();
-        $peer_id = ($matchingMessage->getRecipient() != "") ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
+        $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
         $data = [
             "peer_id" => $peer_id,
@@ -872,7 +875,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     private function prepareAttachments($matchingMessage, $attachment){
         $ret = [];
-        $peer_id = $matchingMessage->getRecipient();
+        $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
         switch(get_class($attachment)){
             case "BotMan\BotMan\Messages\Attachments\Image":
@@ -936,10 +939,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 if(is_bool($attachment->getExtras("vk_as_voice")) && $attachment->getExtras("vk_as_voice") == true){
 
                     // Show "*bot* is recording audiomessage" caption
-                    $this->api("messages.setActivity", [
-                        "peer_id" => $matchingMessage->getRecipient(),
-                        "type" => "audiomessage"
-                    ], true);
+                    $this->sendActivity($matchingMessage, self::ACTIVITY_AUDIO_MESSAGE);
 
 
                     $getUpload = $this->api("docs.getMessagesUploadServer", [
@@ -1047,9 +1047,25 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     public function types(IncomingMessage $matchingMessage)
     {
+        return $this->sendActivity($matchingMessage, self::ACTIVITY_TYPING);
+    }
+
+
+    /**
+     * Sending activity (typing or recording audio message)
+     *
+     * @param IncomingMessage $matchingMessage
+     * @param string $type
+     * @return bool
+     * @throws VKDriverException
+     */
+    public function sendActivity(IncomingMessage $matchingMessage, string $type)
+    {
+        $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
+
         $this->api("messages.setActivity", [
-            "peer_id" => $matchingMessage->getRecipient(),
-            "type" => "typing"
+            "peer_id" => $peer_id,
+            "type" => $type
         ], true);
 
         return true;
@@ -1068,19 +1084,21 @@ class VkCommunityCallbackDriver extends HttpDriver {
         }
         $messageId = $messageObject['id'];
 
+        $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
+
         if($this->isConversation()){
             // Worked only with conversations created by the community
             return $this->api("messages.markAsRead", [
                 "start_message_id" => $messageId,
                 "mark_conversation_as_read" => 1,
-                "peer_id" => $matchingMessage->getRecipient()
+                "peer_id" => $peer_id
             ]);
         }
 
         // message_ids is deprecated
         return $this->api("messages.markAsRead", [
             "start_message_id" => $messageId,
-            "peer_id" => $matchingMessage->getRecipient()
+            "peer_id" => $peer_id
         ]);
     }
 
