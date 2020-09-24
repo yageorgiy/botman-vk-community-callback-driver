@@ -65,6 +65,9 @@ use BotMan\Drivers\VK\Events\WallReplyRestore;
 use BotMan\Drivers\VK\Events\WallRepost;
 use BotMan\Drivers\VK\Exceptions\VKDriverDeprecatedFeature;
 use BotMan\Drivers\VK\Exceptions\VKDriverException;
+use BotMan\Drivers\VK\Extensions\VKKeyboard;
+use BotMan\Drivers\VK\Extensions\VKKeyboardButton;
+use BotMan\Drivers\VK\Extensions\VKKeyboardRow;
 use CURLFile;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -795,48 +798,57 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 $inline = false; // Force the keyboard to be non-inline
                 $one_time = true; // Force the keyboard to be shown once
 
-                $maxButtons = 1; //$inline ? 5 : 5;
-                $maxRows = $inline ? 6 : 10;
-
-                $buttons = Collection::make($actions)
+                $rows = Collection::make($actions)
                     // Use only BotMan\BotMan\Messages\Outgoing\Actions\Button class to send
                     ->reject(function($button){
                         return ($button instanceof Button);
                     })
                     // Use "additional" field as base, set required but unset values
-                    ->map(function($button){
-                        $item = $button["additional"];
-
-                        // Set defaults of the button if unset
-                        $item["color"] = $item["color"] ?? ( (isset($button["color"]) ) ? $button["color"] : "primary" );
-                        $item["action"] = $item["action"] ?? [];
-                        $item["action"]["label"] = $item["action"]["label"] ?? $button["text"];
-                        $item["action"]["type"] = $item["action"]["type"] ?? "text";
-                        $item["action"]["payload"] = $item["action"]["payload"] ??
-                            ( (isset($button["value"])) ? json_encode(["__message" => $button["value"]]) : json_encode([]) );
+                    ->map(function($buttonData){
+                        $item = $buttonData["additional"];
 
                         // Unset field of migration (used in older versions of the driver)
                         unset($item["__x"]);
                         unset($item["__y"]);
 
-                        return $item;
-                    })
-                    // Dividing buttons by max in a row
-                    ->chunk($maxButtons)
-                    // Rejecting extra rows to be accepted by VK
-                    ->reject(function($row, $key) use($maxRows){
-                        return $key > ($maxRows - 1);
+                        // Build a keyboard button
+                        $button = new VKKeyboardButton();
+                        $button->setPayload(json_encode($item));
+
+                        // Set button text
+                        $button->setText($item["action"]["label"] ?? $buttonData["text"]);
+
+                        // Set the color
+                        if(isset($item["color"]))
+                            $button->setColor($item["color"]);
+                        elseif(isset($buttonData["color"]))
+                            $button->setColor($buttonData["color"]);
+                        else
+                            $button->setColor(VKKeyboardButton::COLOR_PRIMARY);
+
+                        // Value
+                        if(isset($buttonData["value"]))
+                            $button->setValue($buttonData["value"]);
+
+                        // Type
+                        if(isset($item["action"]["type"]))
+                            $button->setType($item["action"]["type"]);
+
+                        // Return a row with one button
+                        return new VKKeyboardRow([$button]);
                     })
                     // Serializing to array
                     ->toArray();
 
-                $keyboard = [
-                    "one_time" => $one_time,
-                    "buttons" => $buttons,
-                    "inline" => $inline
-                ];
+                $keyboard = new VKKeyboard();
+                $keyboard->setInline($inline);
+                $keyboard->setOneTime($one_time);
 
-                $data["keyboard"] = json_encode($keyboard);
+                foreach($rows as $row){
+                    $keyboard->addRows($row);
+                }
+
+                $data["keyboard"] = $keyboard->toJSON();
             }
         }
 

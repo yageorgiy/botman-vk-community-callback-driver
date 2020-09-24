@@ -11,6 +11,7 @@ class VKKeyboardButton {
     const COLOR_SECONDARY = "secondary";
     const COLOR_POSITIVE = "positive";
     const COLOR_NEGATIVE = "negative";
+    const EMPTY_LABEL = " "; // Special char, imitates empty string
 
     // Max UTF-8 string length
     const MAX_CHARS = 40;
@@ -59,7 +60,10 @@ class VKKeyboardButton {
      * @return $this
      */
     public function setText($text = "Button"){
-        if(mb_strlen($text) > 40)
+        if(trim($text) == "")
+            $text = self::EMPTY_LABEL;
+
+        if(mb_strlen($text) > self::MAX_CHARS)
             $text = mb_substr($text, 0, self::MAX_CHARS - 3, 'UTF-8').'...';
 
         $this->action["label"] = $text;
