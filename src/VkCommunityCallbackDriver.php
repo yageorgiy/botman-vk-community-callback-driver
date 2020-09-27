@@ -905,7 +905,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 $this->types($matchingMessage);
 
                 $getUploadUrl = $this->api("photos.getMessagesUploadServer", [
-                    'peer_id' => $peer_id
+                    'peer_id' => ($this->isConversation() ? 0 : $peer_id)
                 ], true);
 
 
