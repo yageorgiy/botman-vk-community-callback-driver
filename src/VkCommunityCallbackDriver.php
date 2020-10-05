@@ -70,6 +70,7 @@ use BotMan\Drivers\VK\Extensions\VKKeyboardButton;
 use BotMan\Drivers\VK\Extensions\VKKeyboardRow;
 use CURLFile;
 use Illuminate\Support\Collection;
+use Mimey\MimeTypes;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -912,8 +913,8 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 $uploadImg = $this->upload($getUploadUrl["response"]['upload_url'], $attachment->getUrl());
 
                 // If error
-                if($uploadImg["photo"] == "[]")
-                    throw new VKDriverException("Can't upload image to VK. Please, be sure photo has correct extension.");
+                if(!isset($uploadImg["photo"]) || $uploadImg["photo"] == "[]")
+                    throw new VKDriverException("Can't upload image to VK. Please, be sure the photo has correct extension.");
 
                 $saveImg = $this->api('photos.saveMessagesPhoto', [
                     'photo' => $uploadImg['photo'],
@@ -963,8 +964,8 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $upload = $this->upload($getUpload["response"]['upload_url'], $attachment->getUrl());
 
                     // If error
-                    if($upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
-                        throw new VKDriverException("Can't upload audio to VK. Please, be sure audo has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
+                    if(!isset($uploadImg["file"]) || $upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
+                        throw new VKDriverException("Can't upload audio to VK. Please, be sure the audio has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
 
                     $save = $this->api('docs.save', [
                         'file' => $upload['file']
@@ -1161,16 +1162,32 @@ class VkCommunityCallbackDriver extends HttpDriver {
      */
     public function upload($url, $filename/*, $asArray = false*/)
     {
+        // Saving file to temp folder
+        $tempFileName = tempnam(sys_get_temp_dir(), self::DRIVER_NAME . '_');
+        file_put_contents($tempFileName, file_get_contents($filename));
+
+        // Rename with correct extension (required for uploading)
+        $ext = (new MimeTypes())
+            ->getExtension(mime_content_type($tempFileName));
+        rename($tempFileName, $tempFileName . "." . $ext);
+        $tempFileName = $tempFileName . "." . $ext;
+
+        // CURL post upload
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, array('file' => new CURLfile($filename)));
-        $json = curl_exec($curl);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, [
+            'file' => new CURLfile($tempFileName)
+        ]);
+        $data = curl_exec($curl);
         curl_close($curl);
+
+        // Unlink temp file
+        unlink($tempFileName);
 
         //TODO: check for exceptions
 
-        return json_decode($json, true);
+        return json_decode($data, true);
     }
 
     /**

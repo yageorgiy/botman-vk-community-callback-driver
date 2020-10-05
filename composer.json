@@ -25,7 +25,9 @@
     "php": ">=7.0",
     "botman/botman": "~2.1|~3.0",
     "ext-json": "*",
-    "ext-curl": "*"
+    "ext-curl": "*",
+    "ralouphie/mimey": "^2.1",
+    "ext-fileinfo": "*"
   },
   "require-dev": {
     "botman/studio-addons": "~1.0",
