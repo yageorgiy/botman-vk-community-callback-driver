@@ -964,8 +964,9 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $upload = $this->upload($getUpload["response"]['upload_url'], $attachment->getUrl());
 
                     // If error
-                    if(!isset($uploadImg["file"]) || $upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null)
+                    if(!isset($upload["file"]) || $upload["file"] == "[]" || $upload["file"] == "" || $upload["file"] == null) {
                         throw new VKDriverException("Can't upload audio to VK. Please, be sure the audio has correct extension (OGG is preferred). Learn more: https://vk.com/dev/upload_files_2");
+                    }
 
                     $save = $this->api('docs.save', [
                         'file' => $upload['file']
