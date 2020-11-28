@@ -86,14 +86,14 @@ class VkCommunityCallbackDriver extends HttpDriver {
      *
      * @var array
      */
-    private $messages;
+    protected $messages;
 
     /**
      * IP-address of client
      *
      * @var string
      */
-    private $ip;
+    protected $ip;
 
     /**
      * Peer ID (user or conversation ID)
@@ -101,7 +101,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      *
      * @var string
      */
-    private $peer_id;
+    protected $peer_id;
 
     /**
      * Incoming message from user/conversation
@@ -112,12 +112,12 @@ class VkCommunityCallbackDriver extends HttpDriver {
     /**
      * @var bool
      */
-    private $reply = false;
+    protected $reply = false;
 
     /**
      * @var VKEvent
      */
-    private $driverEvent;
+    protected $driverEvent;
 
 
     /**
@@ -180,7 +180,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
     /**
      * @var bool
      */
-    private $ok = false;
+    protected $ok = false;
 
     /**
      * Echos 'ok'
@@ -286,7 +286,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @param $message_object
      * @return IncomingMessage
      */
-    private function serializeIncomingMessage($message, $sender, $recipient, $message_object) {
+    protected function serializeIncomingMessage($message, $sender, $recipient, $message_object) {
         $attachments = [];
         $collection = Collection::make($message_object["attachments"]);
 
@@ -886,7 +886,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @throws VKDriverException
      * @throws VKDriverException
      */
-    private function prepareAttachments($matchingMessage, $attachment){
+    protected function prepareAttachments($matchingMessage, $attachment){
         $ret = [];
         $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
@@ -1206,7 +1206,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @param Collection|ParameterBag $payload
      * @return false|array Private message (https://vk.com/dev/objects/message) as array or false
      */
-    private function extractPrivateMessageFromPayload($payload)
+    protected function extractPrivateMessageFromPayload($payload)
     {
         switch ($payload->get("type")) {
             case "message_new":

@@ -10,7 +10,7 @@ namespace BotMan\Drivers\VK\Extensions;
 class VKKeyboardRow {
 
     /** @var VKKeyboardButton[] $buttons */
-    private $buttons = [];
+    protected $buttons = [];
 
 
     /**

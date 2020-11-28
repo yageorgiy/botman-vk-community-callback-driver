@@ -33,13 +33,13 @@ class VKKeyboard {
      * Will the keyboard be shown once?
      * @var bool
      */
-    private $oneTime = true;
+    protected $oneTime = true;
 
     /**
      * Keyboard's inline status (be shown under the message or in composing box).
      * @var bool
      */
-    private $inline = false;
+    protected $inline = false;
 
     /**
      * @var VKKeyboardRow[]

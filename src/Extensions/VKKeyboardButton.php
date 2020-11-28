@@ -25,9 +25,9 @@ class VKKeyboardButton {
     }
 
     /** @var string */
-    private $color = self::COLOR_PRIMARY;
+    protected $color = self::COLOR_PRIMARY;
     /** @var array */
-    private $action = [
+    protected $action = [
         "label" => "Button",
         "type" => "text",
         "payload" => "{}"
