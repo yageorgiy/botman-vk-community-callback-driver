@@ -292,11 +292,26 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         // Getting photos
         (($_ = $collection->where('type', 'photo')->pluck('photo')->map(function ($item) {
+                // Search for corrupted array info
+                if(in_array(null, [
+                        $item["album_id"], $item["date"], $item["id"], $item["owner_id"], $item["access_key"], $item["sizes"]
+                    ]) || $item["sizes"] == [])
+                    return false;
+
                 // Pick the best photo (with high resolution)
                 $found = Collection::make($item["sizes"])->sortBy("height")->last();
 
+                // Reject if corrupted image
+                if(
+                    $found["height"] <= 0 ||
+                    $found["width"] <= 0 ||
+                    $found["url"] == null ||
+                    trim($found["url"]) == ""
+                )
+                    return false;
+
                 return new Image($found['url'], $item);
-            })->toArray()) && count($_) > 0) ? ($attachments["photos"] = $_) : false;
+            })->reject(function($value){ return $value === false; })->toArray()) && count($_) > 0) ? ($attachments["photos"] = $_) : false;
 
         // Getting videos
         (($_ = $collection->where('type', 'video')->pluck('video')->map(function ($item) {
