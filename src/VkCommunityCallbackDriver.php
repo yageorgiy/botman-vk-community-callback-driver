@@ -1144,10 +1144,8 @@ class VkCommunityCallbackDriver extends HttpDriver {
     public function api($method, $post_data, $asArray = false)
     {
 
-        $post_data += [
-            "v" => $this->config->get("version"),
-            "access_token" => $this->config->get("token")
-        ];
+        if(!isset($post_data["v"]))             $post_data["v"] = $this->config->get("version");
+        if(!isset($post_data["access_token"]))  $post_data["access_token"] = $this->config->get("token");
 
         $response = $this->http->post($this->config->get("endpoint").$method, [], $post_data, [], false);
 
