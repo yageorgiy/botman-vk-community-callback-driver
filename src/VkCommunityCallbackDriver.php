@@ -287,7 +287,9 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     return false;
 
                 // Pick the best photo (with high resolution)
-                $found = Collection::make($item["sizes"])->sortBy("height")->last();
+                $found = Collection::make($item["sizes"])->sort(function($a, $b){
+                    return $a["height"] * $a["width"] <=> $b["height"] * $b["width"];
+                })->last();
 
                 // Reject if corrupted image
                 if(
