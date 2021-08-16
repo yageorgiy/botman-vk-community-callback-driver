@@ -387,9 +387,9 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @return bool
      */
     public function isConfigured() {
-
         $anyExceptions = false;
-        try{
+
+        try {
             $this->configurationCheckUp();
         } catch (VKDriverDeprecatedFeature $e){
             $anyExceptions = true;
@@ -397,12 +397,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
             $anyExceptions = true;
         }
 
-        return
-            !$anyExceptions; // &&
-//            !empty($this->config->get('secret')) &&
-//            !empty($this->config->get('token')) &&
-//            !empty($this->config->get('version')) &&
-//            version_compare($this->config->get('version'), "5.103", ">=");
+        return !$anyExceptions;
     }
 
 
