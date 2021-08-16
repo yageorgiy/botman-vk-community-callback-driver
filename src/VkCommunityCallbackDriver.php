@@ -294,7 +294,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         (($_ = $collection->where('type', 'photo')->pluck('photo')->map(function ($item) {
                 // Search for corrupted array info
                 if(in_array(null, [
-                        $item["album_id"], $item["date"], $item["id"], $item["owner_id"], $item["access_key"], $item["sizes"]
+                        $item["album_id"], $item["date"], $item["id"], $item["owner_id"], $item["sizes"]
                     ]) || $item["sizes"] == [])
                     return false;
 
