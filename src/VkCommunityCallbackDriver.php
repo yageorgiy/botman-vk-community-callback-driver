@@ -150,15 +150,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
             ignore_user_abort(true);
             ob_start();
 
-
-
             switch($this->payload->get("type")){
-                // Echo the confirmation token
-                // [DEPRECATED] Use $botman->on("confirmation", function($payload, Botman $bot){ echo("token"); }); in routes/botman.php instead
-                case "confirmation":
-//                    $this->echoConfirmationToken();
-                    break;
-
                 // Echo OK for all incoming events
                 default:
                     $this->ok();
@@ -216,8 +208,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
             $this->payload->get("secret") == $this->config->get("secret") &&
             !is_null($this->payload->get("group_id")) &&
             $this->payload->get("group_id") == $this->config->get("group_id");
-        //&&
-//              preg_match('/95\.142\.([0-9]+)\.([0-9]+)/', $this->ip) === true; //TODO: ip checkups for production server
 
         // Stop performing the request if errors
         if($check) $this->configurationCheckUp();
@@ -270,8 +260,6 @@ class VkCommunityCallbackDriver extends HttpDriver {
             }
 
         }
-
-
 
         return $this->messages ?? [];
     }
@@ -335,7 +323,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
 
         // Make an incoming message with no text if it is so
-        if($message == ""){
+        if(empty($message)){
             // Returning message with images only
             if(count($attachments) == 1 and isset($attachments["photos"])){
                 $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
@@ -906,7 +894,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         $peer_id = (!empty($matchingMessage->getRecipient())) ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
         switch(get_class($attachment)){
-            case "BotMan\BotMan\Messages\Attachments\Image":
+            case Image::class:
                 /** @var $attachment Image */
 
                 // Just return already uploaded photo
@@ -941,7 +929,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
                 break;
 
-            case "BotMan\BotMan\Messages\Attachments\Video":
+            case Video::class:
                 /** @var $attachment Video */
 
                 // Just return already uploaded video
@@ -954,7 +942,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 throw new VKDriverException("Uploading videos with community token is not supported by VK API (uploading with user token is under construction)");
                 break;
 
-            case "BotMan\BotMan\Messages\Attachments\Audio":
+            case Audio::class:
                 /** @var $attachment Audio */
 
                 // Just return already uploaded audio
@@ -996,7 +984,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
                 throw new VKDriverException("Uploading audio is restricted by VK API");
                 break;
 
-            case "BotMan\BotMan\Messages\Attachments\File":
+            case File::class:
                 /** @var $attachment File */
 
                 // Just return already uploaded document
