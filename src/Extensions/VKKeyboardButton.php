@@ -8,6 +8,7 @@ class VKKeyboardButton {
 
     // Button colours
     const COLOR_PRIMARY = "primary";
+    const COLOR_DEFAULT = "default";
     const COLOR_SECONDARY = "secondary";
     const COLOR_POSITIVE = "positive";
     const COLOR_NEGATIVE = "negative";
@@ -15,6 +16,14 @@ class VKKeyboardButton {
 
     // Max UTF-8 string length
     const MAX_CHARS = 40;
+
+    // Type constants
+    const TYPE_TEXT = "text";
+    const TYPE_LOCATION = "location";
+    const TYPE_OPEN_APP = "open_app";
+    const TYPE_VK_PAY = "vkpay";
+    const TYPE_CALLBACK = "callback";
+    const TYPE_OPEN_LINK = "open_link";
 
     /**
      * Static button creation.
@@ -29,7 +38,7 @@ class VKKeyboardButton {
     /** @var array */
     protected $action = [
         "label" => "Button",
-        "type" => "text",
+        "type" => self::TYPE_TEXT,
         "payload" => "{}"
     ];
 
@@ -55,7 +64,7 @@ class VKKeyboardButton {
     }
 
     /**
-     * Set button text (title)
+     * Set button label (title)
      * @param string $text
      * @return $this
      */
@@ -67,6 +76,46 @@ class VKKeyboardButton {
             $text = mb_substr($text, 0, self::MAX_CHARS - 3, 'UTF-8').'...';
 
         $this->action["label"] = $text;
+        return $this;
+    }
+
+    /**
+     * Set button link (not for every button type, see https://vk.com/dev/bots_docs_3 for more info)
+     * @param string $link
+     * @return $this
+     */
+    public function setLink($link){
+        $this->action["link"] = $link;
+        return $this;
+    }
+
+    /**
+     * Set button hash (not for every button type, see https://vk.com/dev/bots_docs_3 for more info)
+     * @param string $hash
+     * @return $this
+     */
+    public function setHash($hash){
+        $this->action["hash"] = $hash;
+        return $this;
+    }
+
+    /**
+     * Set button AppID (not for every button type, see https://vk.com/dev/bots_docs_3 for more info)
+     * @param int $id
+     * @return $this
+     */
+    public function setAppID($id){
+        $this->action["app_id"] = $id;
+        return $this;
+    }
+
+    /**
+     * Set button OwnerID (not for every button type, see https://vk.com/dev/bots_docs_3 for more info)
+     * @param int $id
+     * @return $this
+     */
+    public function setOwnerID($id){
+        $this->action["owner_id"] = $id;
         return $this;
     }
 
@@ -85,7 +134,7 @@ class VKKeyboardButton {
      * @param string $type
      * @return $this
      */
-    public function setType($type = "text"){
+    public function setType($type = self::TYPE_TEXT){
         $this->action["type"] = $type;
         return $this;
     }
@@ -104,10 +153,31 @@ class VKKeyboardButton {
      * @return array
      */
     public function toArray(){
-        return [
-            "color" => $this->color,
-            "action" => $this->action
-        ];
+
+        $result = [];
+        // Color only for type = callback or text (according to docs https://vk.com/dev/bots_docs_3 of 09.09.2021)
+        if(
+            isset($this->action["type"]) and
+            in_array($this->action["type"], [
+                self::TYPE_CALLBACK,
+                self::TYPE_TEXT
+            ])
+        )
+            $result["color"] = $this->color;
+
+        // Delete label field for several types of buttons
+        if(
+            isset($this->action["label"]) and
+            isset($this->action["type"]) and
+            in_array($this->action["type"], [
+                self::TYPE_LOCATION,
+                self::TYPE_VK_PAY
+            ])
+        )
+            unset($this->action["label"]);
+
+        $result["action"] = $this->action;
+        return $result;
     }
 
 
