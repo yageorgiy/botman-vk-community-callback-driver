@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  php:
+    restart: always
+    container_name: botman-vk-community-callback-driver-debug-php
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/var/www
+    networks:
+      - botman-vk-community-callback-driver-debug-network
+
+
+networks:
+  botman-vk-community-callback-driver-debug-network:
+    driver: bridge
