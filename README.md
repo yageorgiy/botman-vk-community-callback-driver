@@ -789,6 +789,45 @@ The result:
 
 ![The result of sticker sending](./docs/31.png)
 
+### Sending carousels
+
+The driver also ships with implemented wrapper for attaching native carousel objects.
+
+For example:
+
+```php
+use BotMan\Drivers\VK\Extensions\VKKeyboardButton;
+use BotMan\Drivers\VK\Extensions\VKCarousel;
+use BotMan\Drivers\VK\Extensions\VKCarouselActionOpenLink;
+use BotMan\Drivers\VK\Extensions\VKCarouselElement;
+
+$botman->hears('carousel', function($bot) {
+    $carousel = new VKCarousel();
+
+    for($i = 1; $i <= 10; $i++){
+        $carousel->addElements(
+            new VKCarouselElement(
+                "Element {$i}",
+                "Description {$i}",
+                [
+                    ( new VKKeyboardButton() )
+                        ->setColor("secondary")->setText("Button {$i}")->setValue("button1")
+                ],
+                "-00000_11111", // This is an example icon ID:
+                                // replace `00000` with community ID, the `11111` - with image ID
+                new VKCarouselActionOpenLink("https://some-url/")
+            )
+        );
+    }
+
+    $bot->reply("Native carousel:", [
+        "template" => $carousel->toJSON()
+    ]);
+});
+```
+
+![Example result](./docs/32.png)
+
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
 - [New VK documentation for developers](https://dev.vk.com/)
