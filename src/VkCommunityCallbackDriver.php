@@ -338,7 +338,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
 
         // Make an incoming message with no text if it is so
-        if(empty($message)){
+        if($message == ""){
             // Returning message with images only
             if(count($attachments) == 1 and isset($attachments["photos"])){
                 $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
@@ -402,17 +402,13 @@ class VkCommunityCallbackDriver extends HttpDriver {
      * @return bool
      */
     public function isConfigured() {
-        $anyExceptions = false;
-
         try {
-            $this->configurationCheckUp();
+            return $this->configurationCheckUp();
         } catch (VKDriverDeprecatedFeature $e){
-            $anyExceptions = true;
+            return false;
         } catch (VKDriverException $e){
-            $anyExceptions = true;
+            return false;
         }
-
-        return !$anyExceptions;
     }
 
 
@@ -470,7 +466,9 @@ class VkCommunityCallbackDriver extends HttpDriver {
     public function hasMatchingEvent() {
 
         // Check if VK request
-        $check =    $this->payload->get("secret") == $this->config->get("secret") &&
+        $check = !is_null($this->payload->get("secret")) &&
+            $this->payload->get("secret") == $this->config->get("secret") &&
+            !is_null($this->payload->get("group_id")) &&
             $this->payload->get("group_id") == $this->config->get("group_id");
 
         if (!is_null($this->payload) && $check) {
@@ -743,6 +741,16 @@ class VkCommunityCallbackDriver extends HttpDriver {
             "fields" => ($fields == "") ? "screen_name" : "screen_name," . $fields
         ], true);
 
+        if(
+            empty($response) ||
+            !isset($response["response"]) ||
+            !isset($response["response"][0]) ||
+            !isset($response["response"][0]["first_name"]) ||
+            !isset($response["response"][0]["last_name"]) ||
+            !isset($response["response"][0]["screen_name"])
+        )
+            throw new VKDriverException("Corrupted user data received from VK: " . print_r($response, true));
+
         $first_name = $response["response"][0]["first_name"];
         $last_name = $response["response"][0]["last_name"];
         $username = $response["response"][0]["screen_name"];
@@ -919,6 +927,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         $peer_id = (!empty($matchingMessage->getRecipient()))
             ? $matchingMessage->getRecipient() : $matchingMessage->getSender();
 
+        // TODO: refactor
         switch(get_class($attachment)){
             case Image::class:
                 /** @var $attachment Image */
@@ -938,11 +947,17 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     'peer_id' => ($this->isConversation() ? 0 : $peer_id)
                 ], true);
 
+                if(
+                    empty($getUploadUrl) ||
+                    !isset($getUploadUrl["response"]) ||
+                    !isset($getUploadUrl["response"]['upload_url'])
+                )
+                    throw new VKDriverException("Can't properly do photos.getMessagesUploadServer (corrupted response)");
 
                 $uploadImg = $this->upload($getUploadUrl["response"]['upload_url'], $attachment->getUrl());
 
                 // If error
-                if(!isset($uploadImg["photo"]) || $uploadImg["photo"] == "[]")
+                if(empty($uploadImg) || !isset($uploadImg["photo"]) || $uploadImg["photo"] == "[]")
                     throw new VKDriverException("Can't upload image to VK. Please, be sure the photo has correct extension.");
 
                 $saveImg = $this->api('photos.saveMessagesPhoto', [
@@ -950,6 +965,15 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     'server' => $uploadImg['server'],
                     'hash' => $uploadImg['hash']
                 ], true);
+
+                if(
+                    empty($saveImg) ||
+                    !isset($saveImg["response"]) ||
+                    !isset($saveImg["response"][0]) ||
+                    !isset($saveImg["response"][0]["owner_id"]) ||
+                    !isset($saveImg["response"][0]["id"])
+                )
+                    throw new VKDriverException("Can't properly save VK photo (corrupted response)");
 
                 $ret[] = "photo".$saveImg["response"][0]['owner_id']."_".$saveImg["response"][0]['id'];
 
@@ -990,11 +1014,18 @@ class VkCommunityCallbackDriver extends HttpDriver {
                         'type' => "audio_message"
                     ], true);
 
+                    if(
+                        empty($getUpload) ||
+                        !isset($getUpload["response"]) ||
+                        !isset($getUpload["response"]['upload_url'])
+                    )
+                        throw new VKDriverException("Can't properly do docs.getMessagesUploadServer (corrupted response)");
 
                     $upload = $this->upload($getUpload["response"]['upload_url'], $attachment->getUrl());
 
                     // If error
                     if(
+                        empty($upload) ||
                         !isset($upload["file"]) ||
                         $upload["file"] == "[]" ||
                         $upload["file"] == "" ||
@@ -1008,6 +1039,15 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $save = $this->api('docs.save', [
                         'file' => $upload['file']
                     ], true);
+
+                    if(
+                        empty($save) ||
+                        !isset($save["response"]) ||
+                        !isset($save["response"]["audio_message"]) ||
+                        !isset($save["response"]["audio_message"]["owner_id"]) ||
+                        !isset($save["response"]["audio_message"]["id"])
+                    )
+                        throw new VKDriverException("Can't properly save VK voice audio (corrupted response)");
 
                     $ret[] = "audio_message".$save["response"]["audio_message"]['owner_id']
                         ."_".$save["response"]["audio_message"]['id'];
@@ -1036,11 +1076,18 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     'type' => "doc"
                 ], true);
 
+                if(
+                    empty($getUpload) ||
+                    !isset($getUpload["response"]) ||
+                    !isset($getUpload["response"]['upload_url'])
+                )
+                    throw new VKDriverException("Can't properly do docs.getMessagesUploadServer (corrupted response)");
 
                 $upload = $this->upload($getUpload["response"]['upload_url'], $attachment->getUrl());
 
                 // If error
                 if(
+                    empty($upload) ||
                     !isset($upload["file"]) ||
                     $upload["file"] == "[]" ||
                     $upload["file"] == "" ||
@@ -1062,6 +1109,15 @@ class VkCommunityCallbackDriver extends HttpDriver {
                     $_["tags"] = $attachment->getExtras("vk_doc_tags");
 
                 $save = $this->api('docs.save', $_, true);
+
+                if(
+                    empty($save) ||
+                    !isset($save["response"]) ||
+                    !isset($save["response"]["doc"]) ||
+                    !isset($save["response"]["doc"]["owner_id"]) ||
+                    !isset($save["response"]["doc"]["id"])
+                )
+                    throw new VKDriverException("Can't properly save VK document (corrupted response)");
 
                 $ret[] = "doc".$save["response"]["doc"]['owner_id']."_".$save["response"]["doc"]['id'];
                 break;
