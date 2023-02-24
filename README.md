@@ -8,8 +8,6 @@ BotMan driver to connect VK Community with [BotMan](https://github.com/botman/bo
 
 ## Contributing
 
-[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/0)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/0)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/1)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/1)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/2)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/2)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/3)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/3)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/4)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/4)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/5)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/5)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/6)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/6)[![](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/images/7)](https://sourcerer.io/fame/yageorgiy/yageorgiy/botman-vk-community-callback-driver/links/7)
-
 Contributions are welcome, I would be glad to accept contributions via Pull Requests. 🙂 See `Contributors` tab for more details.
 
 ## Support
@@ -18,19 +16,19 @@ Table of driver's features:
 |Feature|Is Supported|
 | --- | --- |
 |Sending text messages|✔ Fully supported|
-|Sending images|✔ Supported (no titles for images provided by VK API, pictures can't be uploaded to custom albums with community token)*|
+|Sending images|✔ Supported (no titles for images provided by VK API, pictures can't be uploaded to external albums with community token)*|
 |Sending videos|⚠ Partially supported (uploading videos with community token is not supported by VK API)*|
 |Sending audio|⚠ Partially supported (uploading audio is restricted by VK API)|
-|Sending voice messages|✔ Fully supported (as `Audio` object with `addExtras('vk_as_voice', true)`)|
-|Sending documents (files)|✔ Supported (any of *.mp3 and executable files are restricted by the platform to be uploaded)|
+|Sending voice messages|✔ Fully supported via `Audio` object with `addExtras('vk_as_voice', true)`|
+|Sending documents (files)|✔ Supported (some files might be restricted by the platform to be uploaded, the updated criteria list is no longer public in VK docs)|
 |Sending links|✔ Supported|
 |Sending locations|✔ Fully supported|
-|Sending stickers|✔ Supported (as additional parameter)|
-|Sending wall posts|⚠ Partially supported (as additional parameter only)|
-|Sending polls|⚠ Partially supported (as additional parameter only)|
-|Sending market items|⚠ Partially supported (as additional parameter only)|
+|Sending stickers|✔ Supported as an additional parameter to reply|
+|Sending wall posts|✔ Supported as an additional parameter to reply|
+|Sending polls|✔ Supported as an additional parameter to reply|
+|Sending market items|✔ Supported as an additional parameter to reply|
 |Sending keyboards|✔ Fully supported|
-|Sending carousels|⚠ Partially supported (as additional parameter only)|
+|Sending carousels|✔ Supported as an additional parameter to reply|
 |Listening for images|✔ Supported (no titles for images provided by VK API)|
 |Listening for videos|⚠ Partially supported (no video URL provided by VK API, info of copyrighted videos can be unavailable via API)*|
 |Listening for audio|✔ Fully supported|
@@ -43,6 +41,7 @@ Table of driver's features:
 |Retrieving user data|✔ Fully supported (use `VK_USER_FIELDS` property for retrieving custom user fields)|
 |Usage in VK conversations|✔ Supported|
 |Multiple communities handling|❌ Not supported yet|
+|VK Speech Recognition Service|❌ Not implemented yet|
 |VK API low-level management|✔ Fully supported|
 |Events listener|✔ Fully supported (as for 14.08.2020)|
 
@@ -55,15 +54,15 @@ Table of driver's features:
 ### Getting the Community API key
 From the page of your community, go to `Manage -> Settings tab -> API usage -> Access tokens tab`. Click `Create token` button.
 
-![API usage](https://i.imgur.com/LqSm5Fy.png)
+![API usage](./docs/1.png)
 
 Then tick all the permissions in the dialog box.
 
-![Dialog box with permissions](https://i.imgur.com/XDwA7JA.png)
+![Dialog box with permissions](./docs/2.png)
 
 Copy your created token by clicking `Show` link.
 
-![Firstly added API token](https://i.imgur.com/OHhiMHA.png)
+![Firstly added API token](./docs/3.png)
 
 ### Installing the driver
 Require the driver via composer:
@@ -115,11 +114,11 @@ From the page of your community, go to `Manage -> Settings tab -> API usage -> C
 - Fill the required field of URL address of your's bot mount (examples: https://example.com/botman, http://some.mysite.ru/botman).
 - Fill the Secret key field *(required for driver!)*:
 
-![Callback API tab](https://i.imgur.com/Du7jSug.png)
+![Callback API tab](./docs/4.png)
 
 - Find the string (validation code) in section `String to be returned`:
 
-![Callback API tab](https://i.imgur.com/2HoB6lu.png)
+![Callback API tab](./docs/5.png)
 
 - Add the following code to `routes/botman.php` file, replace `REPLACE_ME` with the validation code (e.g. `1a2b3c4d5e`):
 
@@ -146,7 +145,7 @@ $botman->hears('Hello', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/EemEq8u.png)
+![Example image](./docs/6.png)
 
 ### Typing activity
 Bot will wait 10 seconds before answering the question:
@@ -159,11 +158,11 @@ $botman->hears("What\'s your favourite colour\?", function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/2GsW7Iz.png)
+![Example image](./docs/7.png)
 
 After all, it will answer:
 
-![Example image](https://i.imgur.com/NR2zg2q.png)
+![Example image](./docs/8.png)
 
 ### Attaching image
 If bot receives `Gimme some image` message, it will answer `Here it is!` with an attached image:
@@ -186,7 +185,7 @@ $botman->hears('Gimme some image', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/XVLQn1f.png)
+![Example image](./docs/9.png)
 
 ### Attaching video
 
@@ -213,7 +212,7 @@ $botman->hears('Gimme some video', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/dPGi4w6.png)
+![Example image](./docs/10.png)
 
 ### Attaching audio
 
@@ -239,6 +238,8 @@ $botman->hears('Gimme some audio', function ($bot) {
     $bot->reply($message);
 });
 ```
+
+![Example image](./docs/11.png)
 
 ### Sending voice message
 
@@ -268,7 +269,13 @@ $botman->hears('Sing me a song', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/ZqQS8tD.png)
+During upload, the driver will send "recording audio" activity:
+
+![Example image](./docs/12.png)
+
+The result:
+
+![Example image](./docs/13.png)
 
 ### Attaching document (file)
 
@@ -295,7 +302,9 @@ $botman->hears("Any files\?", function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/MiFD3wm.png)
+Uploading a file will also trigger "sending message" activity.
+
+![Example image](./docs/14.png)
 
 ### Attaching location
 
@@ -305,20 +314,24 @@ Example of sending location (taken from BotMan docs):
 use BotMan\BotMan\Messages\Attachments\Location;
 use BotMan\BotMan\Messages\Outgoing\OutgoingMessage;
 
-$botman->hears('send location', function($bot) {
+$botman->hears('Any locations\?', function($bot) {
     // Create attachment
     $attachment = new Location(61.766130, -6.822510, [
         'custom_payload' => true,
     ]);
 
     // Build message object
-    $message = OutgoingMessage::create('This is my text')
+    $message = OutgoingMessage::create('Locations are also supported!')
         ->withAttachment($attachment);
 
     // Reply message object
     $bot->reply($message);
 });
 ```
+
+The result:
+
+![Example image](./docs/15.png)
 
 ### Additional parameters
 
@@ -336,7 +349,7 @@ $botman->hears('Show me the replaced message', function($bot) {
 });
 ```
 
-![The result](https://i.imgur.com/RypHjvS.png)
+![The result](./docs/16.png)
 
 See [messages.send method](https://vk.com/dev/messages.send) for more info.
 
@@ -367,7 +380,7 @@ $botman->hears("List of functions\?", function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/aaphCOL.png)
+![Example image](./docs/17.png)
 
 **Note**: don't use `$answer->getText()` for validation purposes as it can be changed by the client (user). Use `$answer->getValue()` instead.
 
@@ -407,7 +420,7 @@ $botman->hears("List of functions\?", function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/vkuVqnj.png)
+![Example image](./docs/18.png)
 
 See [VK documentation page](https://vk.com/dev/bots_docs_3) for available colours, types and other features. Just add new fields in array of additional parameters as it is shown in the example above.
 
@@ -462,7 +475,7 @@ $botman->hears('keyboard', function(BotMan $bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/dqLhQG1.png)
+![Example image](./docs/19.png)
 
 You can also send a Question with additional parameters with keyboard:
 
@@ -498,7 +511,7 @@ $botman->receivesImages(function($bot, $images) {
 });
 ```
 
-![Example image](https://i.imgur.com/ETJBzzN.png)
+![Example image](./docs/20.png)
 
 ### Listening for videos
 
@@ -518,7 +531,7 @@ $botman->receivesVideos(function($bot, $videos) {
 });
 ```
 
-![Example image](https://i.imgur.com/w2pVLNJ.png)
+![Example image](./docs/21.png)
 
 ### Listening for audio
 
@@ -537,7 +550,7 @@ $botman->receivesAudio(function($bot, $audios) {
 });
 ```
 
-![Example image](https://i.imgur.com/6T48P04.png)
+![Example image](./docs/22.png)
 
 ### Listening for documents (files)
 
@@ -556,7 +569,7 @@ $botman->receivesFiles(function($bot, $files) {
 });
 ```
 
-![Example image](https://i.imgur.com/BszRFg6.png)
+![Example image](./docs/23.png)
 
 ### Listening for location
 
@@ -573,7 +586,7 @@ $botman->receivesLocation(function($bot, $location) {
 });
 ```
 
-![Example image](https://i.imgur.com/tOl4hYn.png)
+![Example image](./docs/24.png)
 
 ### Receiving messages with mixed attachments
 
@@ -604,7 +617,7 @@ $botman->hears('I have both image and video for you.', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/f8FYnTt.png)
+![Example image](./docs/25.png)
 
 ### Retrieving extra user data
 
@@ -628,7 +641,7 @@ $botman->hears('Gimme my photo_200_orig', function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/SlO8aTy.png)
+![Example image](./docs/26.png)
 
 Multiple fields should be comma-separated:
 
@@ -654,7 +667,7 @@ $botman->hears('my info', function(BotMan $bot) {
 });
 ```
 
-![The reply](https://i.imgur.com/cxINTnA.png)
+![The reply](./docs/27.png)
 
 
 See [Information about features available to the user](https://vk.com/dev/bots_docs?f=2.3.%20Information%20about%20features%20available%20to%20the%20user) for more details.
@@ -670,7 +683,7 @@ $botman->hears("Don\'t answer me", function ($bot) {
 });
 ```
 
-![Example image](https://i.imgur.com/pt1gwqA.png)
+![Example image](./docs/28.png)
 
 ### Listening to events
 
@@ -743,7 +756,11 @@ $botman->on("message_typing_state", function($payload, $bot){
 
 The result:
 
-![The result image](https://i.imgur.com/lNhp9si.png)
+![The result image](./docs/29.png)
+
+ℹ️ Don't forget to enable a `Typing status` event in `Callback API -> Event types` tab. 
+
+![Typing status enabled](./docs/30.png)
 
 ### Sending low-level API requests
 
@@ -760,7 +777,7 @@ $botman->hears('sticker', function($bot) {
     $arguments = [
          "peer_id" => $bot->getUser()->getId(), // User ID
          "sticker_id" => 12, // Sticker ID
-         "random_id" => rand(10000,100000) // Random ID (required by VK API, to prevent doubling messages)
+         "random_id" => 0 // required by VK API
     ];
 
     $test = $bot->sendRequest($endpoint, $arguments);
@@ -770,10 +787,11 @@ $botman->hears('sticker', function($bot) {
 
 The result:
 
-![The result of sticker sending](https://i.imgur.com/DyIjsww.png)
+![The result of sticker sending](./docs/31.png)
 
 ## See also
 - [VK documentation for developers](https://vk.com/dev/callback_api)
+- [New VK documentation for developers](https://dev.vk.com/)
 - [BotMan documentation](https://botman.io/2.0/welcome)
 
 ## License
