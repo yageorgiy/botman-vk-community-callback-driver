@@ -331,17 +331,25 @@ class VkCommunityCallbackDriver extends HttpDriver {
         })->toArray()) && count($_) > 0) ? ($attachments["files"] = $_) : false;
 
         // Getting location
-        (($_ = $message_object["geo"] ?? []) && count($_) > 0)
-            ? ($attachments["location"] =
-                new Location($_["coordinates"]["latitude"], $_["coordinates"]["longitude"], $_)
-              ) : false;
+        (($_ = $message_object["geo"] ?? []) && count($_) > 0) ? ($attachments["location"] = new Location($_["coordinates"]["latitude"], $_["coordinates"]["longitude"], $_)) : false;
+        //Добавим аудио сообщения
+        (($_ = $collection->where('type', 'audio_message')->pluck('audio_message')->map(function ($item) {
+                return new Audio($item["link_ogg"], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["audios"] = $_) : false;
+        //Добавим стикеры сообщения
+        (($_ = $collection->where('type', 'sticker')->pluck('sticker')->map(function ($item) {
+                return new Image($item["images"][1]["url"], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["photos"] = $_) : false;
+        (($_ = $collection->where('type', 'graffiti')->pluck('graffiti')->map(function ($item) {
+                return new Image($item["url"], $item);
+            })->toArray()) && count($_) > 0) ? ($attachments["photos"] = $_) : false;
 
 
         // Make an incoming message with no text if it is so
         if($message == ""){
             // Returning message with images only
             if(count($attachments) == 1 and isset($attachments["photos"])){
-                $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload);
+                $result = new IncomingMessage(Image::PATTERN, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
                 $result->setImages($attachments["photos"]);
 
                 return $result;
@@ -349,7 +357,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
             // Returning message with videos only
             if(count($attachments) == 1 and isset($attachments["videos"])){
-                $result = new IncomingMessage(Video::PATTERN, $sender, $recipient, $this->payload);
+                $result = new IncomingMessage(Video::PATTERN, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
                 $result->setVideos($attachments["videos"]);
 
                 return $result;
@@ -357,7 +365,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
             // Returning message with audio only
             if(count($attachments) == 1 and isset($attachments["audios"])){
-                $result = new IncomingMessage(Audio::PATTERN, $sender, $recipient, $this->payload);
+                $result = new IncomingMessage(Audio::PATTERN, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
                 $result->setAudio($attachments["audios"]);
 
                 return $result;
@@ -365,7 +373,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
             // Returning message with files only
             if(count($attachments) == 1 and isset($attachments["files"])){
-                $result = new IncomingMessage(File::PATTERN, $sender, $recipient, $this->payload);
+                $result = new IncomingMessage(File::PATTERN, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
                 $result->setFiles($attachments["files"]);
 
                 return $result;
@@ -373,7 +381,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
             // Returning message with location only
             if(count($attachments) == 1 and isset($attachments["location"])){
-                $result = new IncomingMessage(Location::PATTERN, $sender, $recipient, $this->payload);
+                $result = new IncomingMessage(Location::PATTERN, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
                 $result->setLocation($attachments["location"]);
 
                 return $result;
@@ -382,7 +390,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
 
         // Returning message with mixed attachments or with text given
         if(count($attachments) >= 1){
-            $result = new IncomingMessage($message, $sender, $recipient, $this->payload);
+            $result = new IncomingMessage($message, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
             if(isset($attachments["photos"])) $result->setImages($attachments["photos"]);
             if(isset($attachments["videos"])) $result->setVideos($attachments["videos"]);
             if(isset($attachments["audios"])) $result->setAudio($attachments["audios"]);
@@ -393,7 +401,7 @@ class VkCommunityCallbackDriver extends HttpDriver {
         }
 
         // Returning regular message (if no attachments detected)
-        return new IncomingMessage($message, $sender, $recipient, $this->payload);
+        return new IncomingMessage($message, $sender, $recipient, $this->payload, $this->config->get("bot_id", ''));
     }
 
     /**
