@@ -145,7 +145,7 @@ class VKKeyboardButton {
      * @return $this
      */
     public function setValue($value = "button_value"){
-        $this->action["payload"] = json_encode(["__message" => $value]);
+        $this->action["payload"] = json_encode(["__message" => $value], JSON_UNESCAPED_UNICODE);  //так как VK не проподит декодирование UTF символов из формата \u*
         return $this;
     }
 
