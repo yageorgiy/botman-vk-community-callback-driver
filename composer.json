@@ -26,7 +26,7 @@
     "botman/botman": "~2.0|~3.0",
     "ext-json": "*",
     "ext-curl": "*",
-    "ralouphie/mimey": "^2.1",
+    "xantios/mimey": "^2.1",
     "ext-fileinfo": "*"
   },
   "require-dev": {
