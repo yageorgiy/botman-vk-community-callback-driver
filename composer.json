@@ -64,5 +64,12 @@
       "kylekatarnls/update-helper": true,
       "thecodingmachine/discovery": true
     }
-  }
+  },
+  "repositories" : [
+    {
+      "type": "vcs",
+      "url":  "https://github.com/xantios/mimey"
+    }
+  ]
+
 }
